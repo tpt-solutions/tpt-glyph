@@ -11,4 +11,14 @@ Thumbs.db
 
 # Docker/test artifacts
 /docker/ghostscript/output/
+/fixtures/output/
 *.log
+
+# CI / coverage
+/coverage/
+*.profraw
+*.profdata
+
+# Local KG / diag exports
+*.kg.json
+*.diag.json
