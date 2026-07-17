@@ -1,0 +1,11 @@
+TPT Glyph (The Ghostscript Successor)
+The Purpose: A secure, sandboxed, multi-threaded PDF and PostScript rendering engine.
+Why We Are Upgrading It: Ghostscript is the backbone of enterprise printing and PDF generation, but its C code is a 30-year-old tangled mess of global state variables. If two threads try to render a PDF at the same time, the global state gets corrupted, causing crashes or security breaches. It is notoriously difficult to maintain.
+Target Tech Stack:
+Language: Rust
+Core Libraries: vello or wgpu (for GPU-accelerated rendering), raqote (for pure CPU 2D graphics fallback), pdf (for baseline PDF structure parsing).
+Testing Tools: Ghostscript itself (running in a Docker container) to visually diff the output pixels against TPT Glyph.
+The TPT AI + Knowledge Graph Strategy:
+The Interface: The AI ingests the PostScript operator definitions and extracts the Rendering Pipeline Knowledge Graph. It maps how vector commands (moveto, lineto) translate into pixel buffers, explicitly isolating the "Graphics State" (color, line width, matrices) as a distinct, isolated sub-graph.
+The Generation: The AI uses this graph to completely eliminate the dangerous global state variables of the C version. In TPT Glyph, the Graphics State is passed as an immutable context struct down the rendering tree.
+The Innovation: Because the state is isolated in the graph and passed immutably in Rust, TPT Glyph can natively render multiple pages of a massive PDF simultaneously on different CPU cores, achieving speeds Ghostscript can only dream of.
