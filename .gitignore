@@ -12,6 +12,9 @@ Thumbs.db
 # Docker/test artifacts
 /docker/ghostscript/output/
 /fixtures/output/
+/fixtures/candidate/
+/fixtures/reference/
+/fixtures/diff-report.json
 *.log
 
 # CI / coverage
