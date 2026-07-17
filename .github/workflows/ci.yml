@@ -48,3 +48,37 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check (MSRV)
         run: cargo check --workspace --all-targets
+
+  visual-diff:
+    name: Visual-diff harness (ghostscript regression gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build glyph-diff
+        run: cargo build -p glyph-diff --release
+      - name: Set up Docker (for Ghostscript references)
+        uses: docker/setup-buildx-action@v3
+      - name: Build Ghostscript image
+        run: docker build -f docker/ghostscript/Dockerfile -t glyph-gs docker/ghostscript
+      - name: Render references for fixtures
+        run: |
+          for f in fixtures/ps/*.ps; do
+            name=$(basename "$f" .ps)
+            docker run --rm -v "$PWD/fixtures:/work" glyph-gs \
+              -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 \
+              "-sOutputFile=/work/reference/$name.png" "/work/ps/$name.ps"
+          done
+      - name: Run diff harness
+        # Candidate renders are produced in later phases; until then missing
+        # references are reported as pending (non-fatal). Once candidate output
+        # exists, switch to --missing-reference fail as a hard CI gate.
+        run: |
+          cargo run -p glyph-diff -- \
+            --reference fixtures/reference \
+            --candidate fixtures/candidate \
+            --thresholds fixtures/thresholds.json \
+            --report fixtures/diff-report.json \
+            --missing-reference pending

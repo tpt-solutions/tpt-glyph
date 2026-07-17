@@ -1,0 +1,16 @@
+% SPDX-License-Identifier: MIT OR Apache-2.0
+% Fixture: graphics-state save/restore — exercises gsave/grestore and concat.
+/Cyan { 0 1 1 setrgbcolor } def
+gsave
+0.5 0.5 0.5 setrgbcolor
+100 100 moveto 300 300 lineto stroke
+grestore
+% state restored: color back to default black, matrix identity
+200 200 moveto 400 200 lineto stroke
+
+gsave
+30 rotate
+1 0 0 setrgbcolor
+50 50 moveto 200 200 lineto stroke
+grestore
+showpage

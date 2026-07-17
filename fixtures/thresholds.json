@@ -1,0 +1,5 @@
+{
+  "max_mse": 0.01,
+  "max_peak_error": 24,
+  "min_ssim": 0.98
+}

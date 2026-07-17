@@ -5,6 +5,7 @@ members = [
     "crates/glyph-cli",
     "crates/glyph-kg",
     "crates/glyph-diag",
+    "tools/glyph-diff",
 ]
 
 [workspace.package]

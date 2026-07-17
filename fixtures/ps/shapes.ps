@@ -1,0 +1,14 @@
+% SPDX-License-Identifier: MIT OR Apache-2.0
+% Fixture: filled rectangle + circle — exercises moveto/lineto/closepath/fill and curveto.
+0.9 0.2 0.2 setrgbcolor
+100 100 moveto
+300 100 lineto
+300 300 lineto
+100 300 lineto
+closepath
+fill
+
+0.2 0.6 0.9 setrgbcolor
+400 400 100 0 360 arc
+fill
+showpage
