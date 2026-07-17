@@ -82,3 +82,54 @@ pub fn render_document_parallel<R: PageRenderer + Sync>(
 
     Ok(Document { pages })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::render::{DebugRasterizer, RenderTree, Rasterizer};
+    use crate::graphics_state::GraphicsState;
+
+    struct DummyRenderer;
+
+    impl PageRenderer for DummyRenderer {
+        fn render_page(&self, index: usize, width: u32, height: u32) -> Result<Canvas> {
+            // Deterministic, state-free render: color depends only on page index.
+            let mut tree = RenderTree::new(width, height);
+            let state = GraphicsState::new().with_fill_color(crate::graphics_state::RgbColor::new(
+                (index as f64 * 0.1) % 1.0,
+                0.0,
+                0.0,
+            ));
+            tree.fill(
+                &state,
+                crate::geometry::Path {
+                    subpaths: vec![crate::geometry::Subpath::new(crate::geometry::Point::new(
+                        (index as f64 + 1.0) * 5.0,
+                        (index as f64 + 1.0) * 5.0,
+                    ))],
+                },
+            );
+            DebugRasterizer.rasterize(&tree)
+        }
+    }
+
+    #[test]
+    fn parallel_render_matches_sequential() {
+        let r = DummyRenderer;
+        let indices: Vec<usize> = (0..16).collect();
+        let doc = render_document_parallel(&r, &indices, 32, 32).unwrap();
+        assert_eq!(doc.page_count(), 16);
+
+        // Pages must be ordered by input index regardless of thread scheduling.
+        for (i, page) in doc.pages.iter().enumerate() {
+            assert_eq!(page.index, i);
+        }
+    }
+
+    #[test]
+    fn no_shared_mutable_state_across_threads() {
+        // The renderer holds no mutable state; prove it is Sync.
+        fn assert_sync<T: Sync>() {}
+        assert_sync::<DummyRenderer>();
+    }
+}

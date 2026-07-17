@@ -23,5 +23,6 @@ pub mod document;
 pub mod error;
 pub mod geometry;
 pub mod graphics_state;
+pub mod render;
 
 pub use error::{GlyphError, Result};

@@ -112,3 +112,47 @@ impl GraphicsState {
         self.ctm.apply(p)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_operators_do_not_mutate_self() {
+        let state = GraphicsState::new();
+        let original = state;
+
+        // Each `with_*` returns a NEW state; the original must be unchanged.
+        let s2 = state.with_stroke_color(RgbColor::new(1.0, 0.0, 0.0));
+        let s3 = s2.with_line_width(5.0);
+        let s4 = s3.concat_transform(&Transform::new(2.0, 0.0, 0.0, 2.0, 10.0, 10.0));
+
+        assert_eq!(state, original, "mutating methods must not change self");
+        assert_ne!(state, s2);
+        assert_ne!(s2, s3);
+        assert_ne!(s3, s4);
+        assert_eq!(state.stroke_color, RgbColor::BLACK);
+        assert_eq!(state.line_width, 1.0);
+        assert_eq!(state.ctm, Transform::IDENTITY);
+    }
+
+    #[test]
+    fn colors_are_clamped() {
+        let s = GraphicsState::new().with_fill_color(RgbColor::new(-1.0, 2.0, 0.5));
+        assert_eq!(s.fill_color, RgbColor::new(0.0, 1.0, 0.5));
+    }
+
+    #[test]
+    fn concat_semantics_match_ps() {
+        // PostScript `concat` composes the new matrix onto the CTM.
+        let s = GraphicsState::new().concat_transform(&Transform::new(1.0, 0.0, 0.0, 1.0, 100.0, 50.0));
+        let p = s.to_device(Point::new(10.0, 20.0));
+        assert_eq!(p, Point::new(110.0, 70.0));
+    }
+
+    #[test]
+    fn is_send_and_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<GraphicsState>();
+    }
+}
