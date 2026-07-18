@@ -1,0 +1,32 @@
+[package]
+name = "glyph-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+glyph-core = { path = "../crates/glyph-core" }
+glyph-ps = { path = "../crates/glyph-ps" }
+glyph-pdf = { path = "../crates/glyph-pdf" }
+
+[[bin]]
+name = "ps_interpreter"
+path = "fuzz_targets/ps_interpreter.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "pdf_content"
+path = "fuzz_targets/pdf_content.rs"
+test = false
+doc = false
+
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1

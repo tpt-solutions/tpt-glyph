@@ -19,6 +19,27 @@ impl Point {
     }
 }
 
+impl std::ops::Add for Point {
+    type Output = Point;
+    fn add(self, rhs: Point) -> Point {
+        Point::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl std::ops::Sub for Point {
+    type Output = Point;
+    fn sub(self, rhs: Point) -> Point {
+        Point::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl std::ops::Mul<f64> for Point {
+    type Output = Point;
+    fn mul(self, rhs: f64) -> Point {
+        Point::new(self.x * rhs, self.y * rhs)
+    }
+}
+
 /// A 2D affine transform matrix in the form used by PostScript/PDF:
 ///
 /// ```text

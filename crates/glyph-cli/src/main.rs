@@ -5,8 +5,8 @@
 // Command-line front-end. Currently a skeleton; rendering commands are wired in
 // later phases.
 
-use clap::{Parser, Subcommand};
-use glyph_core::render::Rasterizer;
+use clap::{Parser, Subcommand, ValueEnum};
+use glyph_core::backend::Backend;
 
 #[derive(Parser)]
 #[command(
@@ -19,20 +19,59 @@ struct Cli {
     command: Command,
 }
 
+/// Rasterization backend selection exposed on the command line.
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum, Default)]
+enum BackendChoice {
+    /// Pick the best available backend at runtime.
+    #[default]
+    Auto,
+    /// Reference software scanline rasterizer (always available).
+    Cpu,
+    /// raqote CPU rasterizer (antialiased; compiled into this build).
+    CpuRaqote,
+    /// GPU rasterizer via wgpu (currently falls back to CPU).
+    Gpu,
+}
+
+impl From<BackendChoice> for Option<Backend> {
+    fn from(c: BackendChoice) -> Self {
+        match c {
+            BackendChoice::Auto => None,
+            BackendChoice::Cpu => Some(Backend::Cpu),
+            BackendChoice::CpuRaqote => Some(Backend::CpuRaqote),
+            BackendChoice::Gpu => Some(Backend::Gpu),
+        }
+    }
+}
+
 #[derive(Subcommand)]
 enum Command {
-    /// Render a PDF or PostScript document to raster images.
+    /// Render a PDF or PostScript document to PNG raster images.
+    ///
+    /// Pages are rasterized through the backend-agnostic glyph-core pipeline.
+    /// PDFs are parsed and rendered per-page; PostScript programs are executed
+    /// by the interpreter and their emitted draw commands rasterized. With
+    /// `--parallel`, pages are rendered concurrently across a rayon thread pool
+    /// (each page is independent, so this is data-race free by construction).
     Render {
         /// Input document (.pdf or .ps).
         input: std::path::PathBuf,
-        /// Output directory for rendered pages.
+        /// Output directory for rendered pages (created if missing).
         output: std::path::PathBuf,
-        /// Resolution in DPI (default 72).
+        /// Resolution in DPI. Default 72. Higher values produce larger images.
         #[arg(long, default_value_t = 72)]
         dpi: u32,
-        /// Page range (e.g. "1-3"). Defaults to all pages.
+        /// Page range to render, e.g. "1-3" or "1,3,5". Defaults to all pages.
         #[arg(long)]
         pages: Option<String>,
+        /// Rasterization backend: `auto` (best available), `cpu` (reference
+        /// scanline), `cpuraqote` (raqote CPU), or `gpu` (resolves to CPU until
+        /// the wgpu path lands).
+        #[arg(long, value_enum, default_value_t = BackendChoice::Auto)]
+        backend: BackendChoice,
+        /// Render pages concurrently across the rayon thread pool.
+        #[arg(long)]
+        parallel: bool,
     },
     /// Print version and build information.
     Version,
@@ -52,12 +91,17 @@ fn main() -> anyhow::Result<()> {
             output,
             dpi,
             pages,
+            backend,
+            parallel,
         } => {
             std::fs::create_dir_all(&output)?;
             let stem = input
                 .file_stem()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_else(|| "output".into());
+
+            let backend = glyph_core::backend::SelectedBackend::auto(backend.into());
+            println!("using backend: {:?}", backend.kind());
 
             let is_pdf = input
                 .extension()
@@ -69,14 +113,46 @@ fn main() -> anyhow::Result<()> {
                 let doc = glyph_pdf::PdfDocument::open_path(&input)
                     .map_err(|e| anyhow::anyhow!("failed to open PDF {}: {e}", input.display()))?;
                 let indices = resolve_page_range(doc.page_count(), pages.as_deref())?;
+
+                // Phase 7: render the requested pages concurrently across the
+                // rayon thread pool, then write them out. The per-page render is
+                // independent and state-free, so this is data-race free.
+                // PDF pages are already rasterized by glyph-pdf into Canvases.
+                let canvases: Vec<(usize, glyph_core::canvas::Canvas)> = if parallel {
+                    use rayon::prelude::*;
+                    indices
+                        .par_iter()
+                        .map(|&idx| {
+                            let canvas = glyph_pdf::render_page(
+                                &doc,
+                                idx,
+                                glyph_core::graphics_state::GraphicsState::new(),
+                            )
+                            .map_err(|e| {
+                                anyhow::anyhow!("render error on page {}: {e}", idx + 1)
+                            })?;
+                            Ok::<_, anyhow::Error>((idx, canvas))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                } else {
+                    indices
+                        .iter()
+                        .map(|&idx| {
+                            let canvas = glyph_pdf::render_page(
+                                &doc,
+                                idx,
+                                glyph_core::graphics_state::GraphicsState::new(),
+                            )
+                            .map_err(|e| {
+                                anyhow::anyhow!("render error on page {}: {e}", idx + 1)
+                            })?;
+                            Ok::<_, anyhow::Error>((idx, canvas))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+
                 let mut rendered = 0usize;
-                for idx in indices {
-                    let canvas = glyph_pdf::render_page(
-                        &doc,
-                        idx,
-                        glyph_core::graphics_state::GraphicsState::new(),
-                    )
-                    .map_err(|e| anyhow::anyhow!("render error: {e}"))?;
+                for (idx, canvas) in canvases {
                     let out_path = output.join(format!("{stem}-{}.png", idx + 1));
                     canvas.save_png(&out_path).map_err(|e| {
                         anyhow::anyhow!("failed to write {}: {e}", out_path.display())
@@ -108,7 +184,7 @@ fn main() -> anyhow::Result<()> {
                     .map_err(|e| anyhow::anyhow!("interpreter error: {e}"))?;
 
                 let tree = interp.tree();
-                let canvas = glyph_core::render::DebugRasterizer
+                let canvas = backend
                     .rasterize(tree)
                     .map_err(|e| anyhow::anyhow!("rasterize error: {e}"))?;
 
@@ -119,12 +195,13 @@ fn main() -> anyhow::Result<()> {
                     .map_err(|e| anyhow::anyhow!("failed to write {}: {e}", out_path.display()))?;
 
                 println!(
-                    "rendered {} -> {} ({}x{}, dpi={})",
+                    "rendered {} -> {} ({}x{}, dpi={}, parallel={})",
                     input.display(),
                     out_path.display(),
                     width,
                     height,
-                    dpi
+                    dpi,
+                    parallel
                 );
                 Ok(())
             }

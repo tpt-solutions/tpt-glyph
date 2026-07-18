@@ -37,6 +37,9 @@ pub enum PsError {
     #[error("unknown operator: {0}")]
     UnknownOperator(String),
 
+    #[error("resource limit exceeded: {0}")]
+    ResourceLimit(String),
+
     #[error("dictionary error: {0}")]
     Dict(String),
 
@@ -62,6 +65,7 @@ impl From<PsError> for glyph_core::error::GlyphError {
             PsError::ExecStackUnderflow => {
                 glyph_core::error::GlyphError::Parse("execution stack underflow".into())
             }
+            PsError::ResourceLimit(m) => glyph_core::error::GlyphError::ResourceLimit(m),
             PsError::Io(e) => glyph_core::error::GlyphError::Io(e),
         }
     }

@@ -14,3 +14,6 @@ glyph-core = { workspace = true }
 pdf = "0.9"
 thiserror = { workspace = true }
 anyhow = { workspace = true }
+
+[dev-dependencies]
+rayon = { workspace = true }

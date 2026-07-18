@@ -10,11 +10,13 @@
 pub mod error;
 pub mod interpreter;
 pub mod lexer;
+pub mod limits;
 pub mod parser;
 pub mod stacks;
 
 pub use error::{PsError, Result};
 pub use interpreter::{build_dispatch, Interpreter, OpEntry};
 pub use lexer::tokenize;
+pub use limits::ResourceLimits;
 pub use parser::{parse, Program, PsObject};
 pub use stacks::{Dictionary, ExecStack, OperandStack};

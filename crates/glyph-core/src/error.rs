@@ -30,6 +30,9 @@ pub enum GlyphError {
     #[error("parse error: {0}")]
     Parse(String),
 
+    #[error("resource limit exceeded: {0}")]
+    ResourceLimit(String),
+
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }

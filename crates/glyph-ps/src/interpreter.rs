@@ -12,6 +12,7 @@
 // which mutate the interpreter's `GraphicsState` and append to a `RenderTree`.
 
 use crate::error::{PsError, Result};
+use crate::limits::ResourceLimits;
 use crate::parser::{parse, Program, PsObject};
 use crate::stacks::{Dictionary, ExecStack, OperandStack};
 use glyph_core::geometry::{Path, Point, Subpath, Transform};
@@ -40,6 +41,10 @@ pub struct Interpreter {
     width: u32,
     #[allow(dead_code)]
     height: u32,
+    /// Resource limits enforced during execution (Phase 10).
+    limits: ResourceLimits,
+    /// Number of objects executed so far (instruction budget counter).
+    steps: u64,
 }
 
 /// A handler for a single PostScript operator.
@@ -118,14 +123,78 @@ pub struct OpEntry {
 }
 
 impl Interpreter {
-    /// Create an interpreter targeting a page of `width` x `height` device pixels.
+    /// Create an interpreter targeting a page of `width` x `height` device pixels,
+    /// using the default (fail-closed but permissive) resource limits.
     pub fn new(width: u32, height: u32) -> Self {
+        Self::with_limits(width, height, ResourceLimits::default())
+    }
+
+    /// Create an interpreter with explicit `ResourceLimits` (Phase 10).
+    pub fn with_limits(width: u32, height: u32, limits: ResourceLimits) -> Self {
         Self {
             width,
             height,
+            limits,
             tree: RenderTree::new(width, height),
             ..Default::default()
         }
+    }
+
+    /// Current resource limits.
+    pub fn limits(&self) -> &ResourceLimits {
+        &self.limits
+    }
+
+    /// Replace the active resource limits.
+    pub fn set_limits(&mut self, limits: ResourceLimits) {
+        self.limits = limits;
+    }
+
+    /// Enforce the instruction budget; called before each object is executed.
+    fn check_step(&self) -> Result<()> {
+        if self.limits.max_steps != 0 && self.steps >= self.limits.max_steps {
+            return Err(PsError::ResourceLimit(format!(
+                "instruction budget of {} exceeded",
+                self.limits.max_steps
+            )));
+        }
+        Ok(())
+    }
+
+    /// Enforce the exec-stack depth limit.
+    fn check_exec_depth(&self) -> Result<()> {
+        if self.limits.max_exec_depth != 0 && self.exec.depth() > self.limits.max_exec_depth {
+            return Err(PsError::ResourceLimit(format!(
+                "execution stack depth exceeded limit of {}",
+                self.limits.max_exec_depth
+            )));
+        }
+        Ok(())
+    }
+
+    /// Enforce the operand-stack size limit.
+    fn check_operand(&self) -> Result<()> {
+        if self.limits.max_operand_stack != 0 && self.operands.len() > self.limits.max_operand_stack
+        {
+            return Err(PsError::ResourceLimit(format!(
+                "operand stack size exceeded limit of {}",
+                self.limits.max_operand_stack
+            )));
+        }
+        Ok(())
+    }
+
+    /// Enforce the draw-command (output) limit.
+    fn check_output(&self) -> Result<()> {
+        if self.limits.max_draw_commands != 0
+            && self.tree.commands.len() >= self.limits.max_draw_commands
+        {
+            return Err(PsError::ResourceLimit(format!(
+                "draw command count exceeded limit of {}",
+                self.limits.max_draw_commands
+            )));
+        }
+        Ok(())
     }
 
     /// Access the immutable graphics state.
@@ -152,8 +221,13 @@ impl Interpreter {
     /// Execute an already-parsed program.
     pub fn exec_program(&mut self, prog: Program) -> Result<()> {
         self.exec.push_program(prog.objects);
+        self.check_exec_depth()?;
         while let Some(obj) = self.exec.pop_next() {
+            self.check_step()?;
+            self.steps += 1;
+            self.check_exec_depth()?;
             self.exec_object(obj, &build_dispatch())?;
+            self.check_operand()?;
         }
         Ok(())
     }
@@ -285,6 +359,7 @@ fn op_closepath(i: &mut Interpreter) -> Result<()> {
 fn op_stroke(i: &mut Interpreter) -> Result<()> {
     let path = std::mem::take(&mut i.path);
     if !path.is_empty() {
+        i.check_output()?;
         i.tree.stroke(&i.state, path);
     }
     Ok(())
@@ -293,6 +368,7 @@ fn op_stroke(i: &mut Interpreter) -> Result<()> {
 fn op_fill(i: &mut Interpreter) -> Result<()> {
     let path = std::mem::take(&mut i.path);
     if !path.is_empty() {
+        i.check_output()?;
         i.tree.fill(&i.state, path);
     }
     Ok(())
@@ -301,6 +377,7 @@ fn op_fill(i: &mut Interpreter) -> Result<()> {
 fn op_clip(i: &mut Interpreter) -> Result<()> {
     let path = std::mem::take(&mut i.path);
     if !path.is_empty() {
+        i.check_output()?;
         i.tree.clip(&i.state, path);
     }
     Ok(())
@@ -474,6 +551,7 @@ fn op_rlineto(i: &mut Interpreter) -> Result<()> {
 fn op_eofill(i: &mut Interpreter) -> Result<()> {
     let path = std::mem::take(&mut i.path);
     if !path.is_empty() {
+        i.check_output()?;
         i.tree.fill_even_odd(&i.state, path);
     }
     Ok(())
@@ -740,5 +818,67 @@ mod tests {
         it.run_source("20 20 moveto (Hi) show").unwrap();
         assert_eq!(it.tree().commands.len(), 1);
         assert!(matches!(it.tree().commands[0], DrawCommand::Fill { .. }));
+    }
+
+    #[test]
+    fn operand_stack_limit_is_enforced() {
+        let mut it = Interpreter::with_limits(
+            100,
+            100,
+            ResourceLimits {
+                max_operand_stack: 4,
+                ..ResourceLimits::unbounded()
+            },
+        );
+        // Push 5 numbers onto the operand stack; the 5th exceeds the limit.
+        assert!(it.run_source("1 2 3 4 5").is_err());
+    }
+
+    #[test]
+    fn draw_command_limit_is_enforced() {
+        let mut it = Interpreter::with_limits(
+            200,
+            200,
+            ResourceLimits {
+                max_draw_commands: 3,
+                ..ResourceLimits::unbounded()
+            },
+        );
+        // Three fills succeed; the fourth trips the output limit.
+        let src = "
+            0 0 0 setrgbcolor 0 0 moveto 10 0 lineto 10 10 lineto fill
+            0 0 0 setrgbcolor 0 0 moveto 10 0 lineto 10 10 lineto fill
+            0 0 0 setrgbcolor 0 0 moveto 10 0 lineto 10 10 lineto fill
+            0 0 0 setrgbcolor 0 0 moveto 10 0 lineto 10 10 lineto fill
+        ";
+        assert!(it.run_source(src).is_err());
+    }
+
+    #[test]
+    fn instruction_budget_is_enforced() {
+        let mut it = Interpreter::with_limits(
+            100,
+            100,
+            ResourceLimits {
+                max_steps: 5,
+                ..ResourceLimits::unbounded()
+            },
+        );
+        assert!(it.run_source("1 2 3 4 5 6 7 8 9 10 add add add").is_err());
+    }
+
+    #[test]
+    fn recursion_depth_limit_is_enforced() {
+        let mut it = Interpreter::with_limits(
+            100,
+            100,
+            ResourceLimits {
+                max_exec_depth: 8,
+                ..ResourceLimits::unbounded()
+            },
+        );
+        // A deeply recursive procedure should exceed the exec-stack depth limit.
+        let src = "/f { f } def f";
+        assert!(it.run_source(src).is_err());
     }
 }

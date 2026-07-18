@@ -16,6 +16,7 @@ path = "src/main.rs"
 [dependencies]
 glyph-core.workspace = true
 glyph-kg.workspace = true
+glyph-diff = { path = "../../tools/glyph-diff", version = "0.1.0" }
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true

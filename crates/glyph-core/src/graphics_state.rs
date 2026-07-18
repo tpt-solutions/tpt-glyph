@@ -70,6 +70,16 @@ impl RgbColor {
 /// `Clone` derive is trivial and cheap (small, `Copy`-friendly fields) so the
 /// state can be duplicated when entering a `gsave`/`grestore` scope or when
 /// dispatched to another thread.
+///
+/// ```
+/// use glyph_core::graphics_state::{GraphicsState, RgbColor};
+///
+/// let a = GraphicsState::new().with_fill_color(RgbColor::new(1.0, 0.0, 0.0));
+/// let b = a.with_fill_color(RgbColor::new(0.0, 1.0, 0.0));
+/// // Deriving a new state leaves the original unchanged.
+/// assert_eq!(a.fill_color, RgbColor::new(1.0, 0.0, 0.0));
+/// assert_eq!(b.fill_color, RgbColor::new(0.0, 1.0, 0.0));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct GraphicsState {
     /// Current stroke color.

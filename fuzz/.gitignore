@@ -1,0 +1,4 @@
+# Fuzzing artifacts
+corpus/
+artifacts/
+coverage/

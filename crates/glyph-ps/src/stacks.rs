@@ -114,6 +114,12 @@ impl ExecStack {
         None
     }
 
+    /// Number of pending execution frames (a proxy for procedure/loop nesting
+    /// depth, used by resource-limit enforcement in Phase 10).
+    pub fn depth(&self) -> usize {
+        self.frames.len()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.frames.iter().all(|f| f.is_empty()) && self.frames.is_empty()
     }

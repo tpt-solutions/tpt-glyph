@@ -8,6 +8,8 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Core rendering engine for TPT Glyph: graphics state, geometry, and pipeline abstractions."
+keywords = ["pdf", "postscript", "rendering", "graphics", "rasterizer"]
+categories = ["graphics", "rendering", "multimedia::images"]
 
  [dependencies]
 rayon.workspace = true
@@ -18,4 +20,21 @@ tracing.workspace = true
 image = "0.25"
 pdf = "0.9"
 
+# Optional accelerated backends (Phase 6).
+raqote = { workspace = true, optional = true }
+wgpu = { workspace = true, optional = true }
+
+[features]
+default = []
+# CPU-backed rasterization via raqote; used as the deterministic fallback path.
+raqote-backend = ["dep:raqote"]
+# GPU-backed rasterization via wgpu; not yet wired to a full pipeline (Phase 6).
+wgpu-backend = ["dep:wgpu"]
+
 [dev-dependencies]
+criterion = "0.5"
+rayon = { workspace = true }
+
+[[bench]]
+name = "backends"
+harness = false
