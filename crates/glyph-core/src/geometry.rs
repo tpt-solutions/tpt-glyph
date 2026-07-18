@@ -106,6 +106,11 @@ impl Subpath {
             closed: false,
         }
     }
+
+    /// Append a cubic Bézier segment to this subpath.
+    pub fn push_curve(&mut self, curve: CubicBezier) {
+        self.segments.push(curve);
+    }
 }
 
 /// A complete path: zero or more subpaths.

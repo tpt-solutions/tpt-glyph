@@ -9,9 +9,9 @@
 // dependency (those live in Phase 6).
 
 use crate::canvas::Canvas;
+use crate::error::Result;
 use crate::geometry::{Path, Point, Transform};
 use crate::graphics_state::{GraphicsState, RgbColor};
-use crate::error::Result;
 
 /// A single atomic drawing operation emitted by the operator pipeline.
 ///
@@ -34,6 +34,12 @@ pub enum DrawCommand {
         color: RgbColor,
         ctm: Transform,
     },
+    /// Fill the given path using the even-odd rule (PostScript `eofill`).
+    FillEvenOdd {
+        path: Path,
+        color: RgbColor,
+        ctm: Transform,
+    },
     /// Set the clip region (intersection) — applied by backends during traversal.
     Clip { path: Path, ctm: Transform },
 }
@@ -44,6 +50,7 @@ impl DrawCommand {
         match self {
             DrawCommand::Stroke { ctm, .. }
             | DrawCommand::Fill { ctm, .. }
+            | DrawCommand::FillEvenOdd { ctm, .. }
             | DrawCommand::Clip { ctm, .. } => ctm,
         }
     }
@@ -85,9 +92,21 @@ impl RenderTree {
         });
     }
 
+    /// Append an even-odd fill command derived from the current immutable state.
+    pub fn fill_even_odd(&mut self, state: &GraphicsState, path: Path) {
+        self.commands.push(DrawCommand::FillEvenOdd {
+            path,
+            color: state.fill_color,
+            ctm: state.ctm,
+        });
+    }
+
     /// Append a clip command derived from the current immutable state.
     pub fn clip(&mut self, state: &GraphicsState, path: Path) {
-        self.commands.push(DrawCommand::Clip { path, ctm: state.ctm });
+        self.commands.push(DrawCommand::Clip {
+            path,
+            ctm: state.ctm,
+        });
     }
 }
 
@@ -113,6 +132,7 @@ impl Rasterizer for DebugRasterizer {
             let color = match cmd {
                 DrawCommand::Stroke { color, .. } => *color,
                 DrawCommand::Fill { color, .. } => *color,
+                DrawCommand::FillEvenOdd { color, .. } => *color,
                 DrawCommand::Clip { .. } => continue,
             };
             // Stamp a 4x4 dot at each path start point (post-transform) so output
@@ -141,6 +161,7 @@ fn path_points(cmd: &DrawCommand) -> Vec<Point> {
     let path = match cmd {
         DrawCommand::Stroke { path, .. } => path,
         DrawCommand::Fill { path, .. } => path,
+        DrawCommand::FillEvenOdd { path, .. } => path,
         DrawCommand::Clip { .. } => return Vec::new(),
     };
     path.subpaths.iter().map(|s| s.start).collect()

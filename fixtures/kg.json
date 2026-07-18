@@ -1,0 +1,383 @@
+{
+  "nodes": {
+    "show": {
+      "id": "show",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Render text from a string."
+    },
+    "setlinecap": {
+      "id": "setlinecap",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Set line cap style."
+    },
+    "setgray": {
+      "id": "setgray",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Set color to a gray level."
+    },
+    "fill": {
+      "id": "fill",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Fill the current path (nonzero winding)."
+    },
+    "line_join": {
+      "id": "line_join",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current line join style."
+    },
+    "showpage": {
+      "id": "showpage",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Render the current page to the device."
+    },
+    "line_width": {
+      "id": "line_width",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current line width in user space."
+    },
+    "stroke_color": {
+      "id": "stroke_color",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current stroke color (RGB)."
+    },
+    "clip_path": {
+      "id": "clip_path",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current clipping path."
+    },
+    "lineto": {
+      "id": "lineto",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Append a straight line to (x,y)."
+    },
+    "curveto": {
+      "id": "curveto",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Append a cubic Bézier via two control points."
+    },
+    "closepath": {
+      "id": "closepath",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Close the current subpath."
+    },
+    "eofill": {
+      "id": "eofill",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Fill using even-odd rule."
+    },
+    "rmoveto": {
+      "id": "rmoveto",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Relative moveto."
+    },
+    "gsave": {
+      "id": "gsave",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Push a copy of the graphics state."
+    },
+    "dup": {
+      "id": "dup",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Duplicate the top operand-stack element."
+    },
+    "rlineto": {
+      "id": "rlineto",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Relative lineto."
+    },
+    "def": {
+      "id": "def",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Define a name in the dictionary stack."
+    },
+    "pop": {
+      "id": "pop",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Remove the top operand-stack element."
+    },
+    "line_cap": {
+      "id": "line_cap",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current line cap style."
+    },
+    "exch": {
+      "id": "exch",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Exchange the top two stack elements."
+    },
+    "grestore": {
+      "id": "grestore",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Pop and restore the graphics state."
+    },
+    "arc": {
+      "id": "arc",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Append a circular arc."
+    },
+    "stroke": {
+      "id": "stroke",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Stroke the current path."
+    },
+    "setlinejoin": {
+      "id": "setlinejoin",
+      "kind": "Operator",
+      "implemented": false,
+      "description": "Set line join style."
+    },
+    "ctm": {
+      "id": "ctm",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current transformation matrix (user -> device)."
+    },
+    "clip": {
+      "id": "clip",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Intersect clipping path with current path."
+    },
+    "setlinewidth": {
+      "id": "setlinewidth",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Set the line width."
+    },
+    "moveto": {
+      "id": "moveto",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Begin a new subpath at (x,y)."
+    },
+    "fill_color": {
+      "id": "fill_color",
+      "kind": "GraphicsState",
+      "implemented": true,
+      "description": "Current fill color (RGB)."
+    },
+    "concat": {
+      "id": "concat",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Concatenate a matrix onto the CTM."
+    },
+    "setrgbcolor": {
+      "id": "setrgbcolor",
+      "kind": "Operator",
+      "implemented": true,
+      "description": "Set stroke and fill color from RGB."
+    }
+  },
+  "edges": [
+    {
+      "from": "stroke",
+      "to": "stroke_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "stroke",
+      "to": "line_width",
+      "relation": "modifies"
+    },
+    {
+      "from": "stroke",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "stroke",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "stroke",
+      "to": "paints_path",
+      "relation": "produces"
+    },
+    {
+      "from": "fill",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "fill",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "fill",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "fill",
+      "to": "paints_path",
+      "relation": "produces"
+    },
+    {
+      "from": "clip",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "eofill",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "eofill",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "eofill",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "eofill",
+      "to": "paints_path",
+      "relation": "produces"
+    },
+    {
+      "from": "gsave",
+      "to": "stroke_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "gsave",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "gsave",
+      "to": "line_width",
+      "relation": "modifies"
+    },
+    {
+      "from": "gsave",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "gsave",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "grestore",
+      "to": "stroke_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "grestore",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "grestore",
+      "to": "line_width",
+      "relation": "modifies"
+    },
+    {
+      "from": "grestore",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "grestore",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "setrgbcolor",
+      "to": "stroke_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "setrgbcolor",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "setlinewidth",
+      "to": "line_width",
+      "relation": "modifies"
+    },
+    {
+      "from": "concat",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "setlinecap",
+      "to": "line_cap",
+      "relation": "modifies"
+    },
+    {
+      "from": "setlinejoin",
+      "to": "line_join",
+      "relation": "modifies"
+    },
+    {
+      "from": "setgray",
+      "to": "stroke_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "setgray",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "showpage",
+      "to": "clip_path",
+      "relation": "modifies"
+    },
+    {
+      "from": "showpage",
+      "to": "flushes_page",
+      "relation": "produces"
+    },
+    {
+      "from": "show",
+      "to": "fill_color",
+      "relation": "modifies"
+    },
+    {
+      "from": "show",
+      "to": "ctm",
+      "relation": "modifies"
+    },
+    {
+      "from": "show",
+      "to": "paints_path",
+      "relation": "produces"
+    }
+  ]
+}

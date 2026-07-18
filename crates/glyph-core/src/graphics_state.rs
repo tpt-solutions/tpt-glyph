@@ -11,6 +11,24 @@
 use crate::geometry::{Point, Transform};
 use serde::{Deserialize, Serialize};
 
+/// Line cap style (corresponds to PostScript `setlinecap`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum LineCap {
+    #[default]
+    Butt,
+    Round,
+    ProjectingSquare,
+}
+
+/// Line join style (corresponds to PostScript `setlinejoin`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum LineJoin {
+    #[default]
+    Miter,
+    Round,
+    Bevel,
+}
+
 /// 8-bit-per-channel RGB color. Channels are normalized to `[0.0, 1.0]`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct RgbColor {
@@ -62,6 +80,10 @@ pub struct GraphicsState {
     pub line_width: f64,
     /// CTM: current transformation matrix mapping user space to device space.
     pub ctm: Transform,
+    /// Line cap style (PostScript `setlinecap`).
+    pub line_cap: LineCap,
+    /// Line join style (PostScript `setlinejoin`).
+    pub line_join: LineJoin,
 }
 
 impl Default for GraphicsState {
@@ -71,6 +93,8 @@ impl Default for GraphicsState {
             fill_color: RgbColor::BLACK,
             line_width: 1.0,
             ctm: Transform::identity(),
+            line_cap: LineCap::default(),
+            line_join: LineJoin::default(),
         }
     }
 }
@@ -96,6 +120,18 @@ impl GraphicsState {
     /// Set the line width, returning a new state.
     pub fn with_line_width(mut self, width: f64) -> Self {
         self.line_width = width.max(0.0);
+        self
+    }
+
+    /// Set the line cap style, returning a new state.
+    pub fn with_line_cap(mut self, cap: LineCap) -> Self {
+        self.line_cap = cap;
+        self
+    }
+
+    /// Set the line join style, returning a new state.
+    pub fn with_line_join(mut self, join: LineJoin) -> Self {
+        self.line_join = join;
         self
     }
 
@@ -145,7 +181,8 @@ mod tests {
     #[test]
     fn concat_semantics_match_ps() {
         // PostScript `concat` composes the new matrix onto the CTM.
-        let s = GraphicsState::new().concat_transform(&Transform::new(1.0, 0.0, 0.0, 1.0, 100.0, 50.0));
+        let s =
+            GraphicsState::new().concat_transform(&Transform::new(1.0, 0.0, 0.0, 1.0, 100.0, 50.0));
         let p = s.to_device(Point::new(10.0, 20.0));
         assert_eq!(p, Point::new(110.0, 70.0));
     }

@@ -45,22 +45,33 @@ for f in fixtures/ps/*.ps; do
     "-sOutputFile=/work/reference/$name.png" "/work/ps/$name.ps"
 done
 
-# 2. Once TPT Glyph can render, drop candidates into fixtures/candidate/ and:
+# 2. Render TPT Glyph candidates for every fixture (PS + PDF):
+for f in fixtures/ps/*.ps fixtures/pdf/*.pdf; do
+  cargo run -p glyph-cli -- render "$f" fixtures/candidate --dpi 72
+done
+
+# 3. Compare:
 cargo run -p glyph-diff -- \
   --reference fixtures/reference --candidate fixtures/candidate \
   --thresholds fixtures/thresholds.json --report fixtures/diff-report.json \
   --missing-reference pending
 ```
 
-On Windows, `tools/run-diff.ps1` automates both steps (it skips reference
-generation with a warning if Docker is unavailable).
+On Windows, `tools/run-diff.ps1` automates all steps (it skips reference
+generation with a warning if Docker is unavailable):
+
+```powershell
+pwsh tools/run-diff.ps1            # generate refs + candidates + diff
+pwsh tools/run-diff.ps1 -SkipReferences   # reuse existing references
+```
 
 ## CI
 
 The `visual-diff` job in `.github/workflows/ci.yml` builds the Ghostscript image,
-renders references for all `fixtures/ps/*.ps`, and runs `glyph-diff`. Until
-candidate rendering exists, missing references are reported as **pending**
-(non-fatal). Once candidate output is wired in, switch the runner to
+renders references for all `fixtures/ps/*.ps` and `fixtures/pdf/*.pdf`, renders
+the matching TPT Glyph candidates via `glyph`, and runs `glyph-diff`. Missing
+references (e.g. when Docker is unavailable) are reported as **pending**
+(non-fatal). Once candidate fidelity is sufficient, switch the runner to
 `--missing-reference fail` to make visual regressions a hard CI gate.
 
 ## Adding a fixture

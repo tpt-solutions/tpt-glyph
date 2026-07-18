@@ -1,5 +1,5 @@
 [package]
-name = "glyph-core"
+name = "glyph-ps"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -7,15 +7,14 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "Core rendering engine for TPT Glyph: graphics state, geometry, and pipeline abstractions."
+description = "PostScript interpreter for TPT Glyph: tokenizer, parser, stacks, and KG-driven operator dispatch."
 
- [dependencies]
-rayon.workspace = true
+[dependencies]
+glyph-core = { workspace = true }
+glyph-kg = { workspace = true }
 serde.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-image = "0.25"
-pdf = "0.9"
 
 [dev-dependencies]

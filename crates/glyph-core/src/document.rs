@@ -86,8 +86,8 @@ pub fn render_document_parallel<R: PageRenderer + Sync>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::render::{DebugRasterizer, RenderTree, Rasterizer};
     use crate::graphics_state::GraphicsState;
+    use crate::render::{DebugRasterizer, Rasterizer, RenderTree};
 
     struct DummyRenderer;
 

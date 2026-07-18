@@ -5,6 +5,8 @@ members = [
     "crates/glyph-cli",
     "crates/glyph-kg",
     "crates/glyph-diag",
+    "crates/glyph-ps",
+    "crates/glyph-pdf",
     "tools/glyph-diff",
 ]
 
@@ -21,6 +23,8 @@ description = "A secure, sandboxed, multi-threaded PDF/PostScript rendering engi
 [workspace.dependencies]
 glyph-core = { path = "crates/glyph-core", version = "0.1.0" }
 glyph-kg = { path = "crates/glyph-kg", version = "0.1.0" }
+glyph-ps = { path = "crates/glyph-ps", version = "0.1.0" }
+glyph-pdf = { path = "crates/glyph-pdf", version = "0.1.0" }
 
 # Rendering backends
 wgpu = "0.20"

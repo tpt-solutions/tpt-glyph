@@ -57,13 +57,13 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Build glyph-diff
-        run: cargo build -p glyph-diff --release
+      - name: Build glyph-cli + glyph-diff
+        run: cargo build -p glyph-cli -p glyph-diff --release
       - name: Set up Docker (for Ghostscript references)
         uses: docker/setup-buildx-action@v3
       - name: Build Ghostscript image
         run: docker build -f docker/ghostscript/Dockerfile -t glyph-gs docker/ghostscript
-      - name: Render references for fixtures
+      - name: Render Ghostscript references
         run: |
           for f in fixtures/ps/*.ps; do
             name=$(basename "$f" .ps)
@@ -71,10 +71,25 @@ jobs:
               -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 \
               "-sOutputFile=/work/reference/$name.png" "/work/ps/$name.ps"
           done
+          for f in fixtures/pdf/*.pdf; do
+            name=$(basename "$f" .pdf)
+            docker run --rm -v "$PWD/fixtures:/work" glyph-gs \
+              -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 \
+              "-sOutputFile=/work/reference/$name.png" "/work/pdf/$name.pdf"
+          done
+      - name: Render TPT Glyph candidates
+        run: |
+          for f in fixtures/ps/*.ps; do
+            name=$(basename "$f" .ps)
+            ./target/release/glyph render "$f" fixtures/candidate --dpi 72
+          done
+          for f in fixtures/pdf/*.pdf; do
+            name=$(basename "$f" .pdf)
+            ./target/release/glyph render "$f" fixtures/candidate --dpi 72
+          done
       - name: Run diff harness
-        # Candidate renders are produced in later phases; until then missing
-        # references are reported as pending (non-fatal). Once candidate output
-        # exists, switch to --missing-reference fail as a hard CI gate.
+        # Candidates are produced above; missing references (e.g. when Docker is
+        # unavailable) are reported as pending (non-fatal).
         run: |
           cargo run -p glyph-diff -- \
             --reference fixtures/reference \

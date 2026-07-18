@@ -16,6 +16,9 @@ path = "src/main.rs"
 [dependencies]
 glyph-core.workspace = true
 glyph-kg.workspace = true
+glyph-ps.workspace = true
+glyph-pdf = { workspace = true }
+
 clap.workspace = true
 anyhow.workspace = true
 tracing.workspace = true

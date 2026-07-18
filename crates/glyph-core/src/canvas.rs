@@ -89,4 +89,22 @@ impl Canvas {
         px.b = ((b as f64) * a + (px.b as f64) * inv).round() as u8;
         px.a = ((255.0) * a + (px.a as f64) * inv).round() as u8;
     }
+
+    /// Convert the canvas into an `image::RgbaImage` for export.
+    pub fn to_rgba_image(&self) -> image::RgbaImage {
+        let mut img = image::RgbaImage::new(self.width, self.height);
+        for (i, px) in self.pixels.iter().enumerate() {
+            let x = (i % self.width as usize) as u32;
+            let y = (i / self.width as usize) as u32;
+            img.put_pixel(x, y, image::Rgba([px.r, px.g, px.b, px.a]));
+        }
+        img
+    }
+
+    /// Write the canvas to a PNG file at `path`.
+    pub fn save_png(&self, path: &std::path::Path) -> std::io::Result<()> {
+        self.to_rgba_image()
+            .save(path)
+            .map_err(|e| std::io::Error::other(e.to_string()))
+    }
 }
