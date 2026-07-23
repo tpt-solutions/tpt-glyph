@@ -73,16 +73,19 @@ jobs:
         run: docker build -f docker/ghostscript/Dockerfile -t glyph-gs docker/ghostscript
       - name: Render Ghostscript references
         run: |
+          mkdir -p fixtures/reference fixtures/candidate
           for f in fixtures/ps/*.ps; do
             name=$(basename "$f" .ps)
             docker run --rm -v "$PWD/fixtures:/work" glyph-gs \
               -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 \
+              --permit-file-read=/work/* --permit-file-write=/work/* \
               "-sOutputFile=/work/reference/$name.png" "/work/ps/$name.ps"
           done
           for f in fixtures/pdf/*.pdf; do
             name=$(basename "$f" .pdf)
             docker run --rm -v "$PWD/fixtures:/work" glyph-gs \
               -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 \
+              --permit-file-read=/work/* --permit-file-write=/work/* \
               "-sOutputFile=/work/reference/$name.png" "/work/pdf/$name.pdf"
           done
       - name: Render TPT Glyph candidates

@@ -41,6 +41,7 @@ if (-not $SkipReferences) {
             Write-Host "Ghostscript: $name.ps -> reference/$name.png"
             docker run --rm -v "${fixtures}:/work" glyph-gs `
                 -dNOPAUSE -dBATCH -sDEVICE=png16m -r$Dpi `
+                --permit-file-read=/work/* --permit-file-write=/work/* `
                 "-sOutputFile=/work/reference/$name.png" "/work/ps/$name.ps" | Out-Null
         }
 
@@ -49,6 +50,7 @@ if (-not $SkipReferences) {
             Write-Host "Ghostscript: $name.pdf -> reference/$name.png"
             docker run --rm -v "${fixtures}:/work" glyph-gs `
                 -dNOPAUSE -dBATCH -sDEVICE=png16m -r$Dpi `
+                --permit-file-read=/work/* --permit-file-write=/work/* `
                 "-sOutputFile=/work/reference/$name.png" "/work/pdf/$name.pdf" | Out-Null
         }
     }

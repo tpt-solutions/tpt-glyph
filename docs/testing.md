@@ -38,10 +38,12 @@ live in `fixtures/thresholds.json` and can be tuned as the engine matures.
 ```sh
 # 1. Generate Ghostscript references (requires Docker):
 docker build -f docker/ghostscript/Dockerfile -t glyph-gs docker/ghostscript
+mkdir -p fixtures/reference fixtures/candidate
 for f in fixtures/ps/*.ps; do
   name=$(basename "$f" .ps)
   docker run --rm -v "$PWD/fixtures:/work" glyph-gs \
     -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 \
+    --permit-file-read=/work/* --permit-file-write=/work/* \
     "-sOutputFile=/work/reference/$name.png" "/work/ps/$name.ps"
 done
 

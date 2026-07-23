@@ -16,4 +16,5 @@ WORKDIR /work
 #   docker run --rm -v "$PWD/fixtures:/work" glyph-gs render.ps 72
 ENTRYPOINT ["gs"]
 CMD ["-dNOPAUSE", "-dBATCH", "-sDEVICE=png16m", "-r72", \
+     "--permit-file-read=/work/*", "--permit-file-write=/work/*", \
      "-sOutputFile=/work/output/%08d.png", "/work/input/render.ps"]
