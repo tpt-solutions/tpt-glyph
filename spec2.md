@@ -1,0 +1,110 @@
+v2.0 Design Document: The Comprehensive PDF & Typesetting Suite
+1. Core Philosophy
+Modularity First: Every component must be a standalone, publishable crates.io crate. Users should be able to import only the math typesetter or only the PDF measurer without pulling in a massive dependency tree.
+Immutable IR (Intermediate Representation): PDF editing is notoriously fragile due to compressed streams and incremental updates. We will parse PDFs into a high-fidelity, immutable IR. All "edits" are functional transformations of this IR, which is then serialized into a clean, garbage-collected PDF.
+The TPT Moat: Leverage glyph-kg (Knowledge Graph) and glyph-diag (AI diagnostics) to provide actionable feedback on malformed PDFs or layout failures, something no legacy tool can do.
+2. Expanded Workspace Architecture
+
+tpt-glyph/
+├── Cargo.toml                 # Workspace root (manages shared dev dependencies)
+├── crates/
+│   # --- CORE & FOUNDATION ---
+│   ├── glyph-core/            # [EXISTING] Immutable GraphicsState, geometry, canvas, color spaces.
+│   ├── glyph-font/            # [NEW] Font metric parsing (TTF/OTF via ttf-parser), glyph outlining, kerning.
+│   
+│   # --- PDF LIFECYCLE ---
+│   ├── glyph-pdf-parser/      # [EXISTING/EXPANDED] Robust parsing of PDF/PS into IR.
+│   ├── glyph-pdf-ir/          # [NEW] The canonical Intermediate Representation of a PDF document.
+│   ├── glyph-pdf-writer/      # [NEW] Low-level, zero-allocation PDF object serialization.
+│   ├── glyph-pdf-editor/      # [NEW] Transactional, safe API for mutating the IR (text replacement, image insertion).
+│   ├── glyph-pdf-measure/     # [NEW] Bounding boxes, text metrics, ink coverage, page dimension analysis.
+│   
+│   # --- TYPESETTING & MATH ---
+│   ├── glyph-typeset/         # [NEW] High-level document layout engine (paragraphs, pages, breaks).
+│   ├── glyph-math/            # [NEW] The "Better than LaTeX" math typesetting engine.
+│   
+│   # --- INTELLIGENCE ---
+│   ├── glyph-kg/              # [EXISTING] Rendering pipeline knowledge graph.
+│   ├── glyph-diag/            # [EXISTING] AI-assisted diagnostic tool.
+
+3. Deep Dive: The "Better Than LaTeX" Math Engine (glyph-math)
+LaTeX math is powerful but syntactically archaic, slow to compile, and difficult to embed dynamically. We will beat it by combining TeX’s proven layout algorithms with modern Rust ergonomics.
+How it Works:
+The AST: Instead of parsing raw LaTeX strings at runtime, glyph-math defines a rich, strongly-typed Rust AST for math expressions.
+
+   use glyph_math::prelude::*;
+
+   // Builder pattern or macro-based DSL for ergonomic construction
+   let expr = MathExpr::Fraction {
+       numerator: Box::new(MathExpr::Identifier("x")),
+       denominator: Box::new(MathExpr::Superscript {
+           base: Box::new(MathExpr::Identifier("y")),
+           superscript: Box::new(MathExpr::Number("2")),
+       }),
+   };
+
+   The Layout Algorithm: We implement the classic TeX math layout algorithm (as described in The TeXbook, Chapter 17). This handles:
+Math Styles: Automatically switching between Display, Text, Script, and ScriptScript styles based on nesting depth.
+Math Atom Types: Correctly spacing ORD (ordinary), OP (operators), BIN (binary), REL (relations), etc., using standard math kerning tables.
+Axis Height & Rule Thickness: Dynamically calculated based on the current font's x-height.
+Emission: The laid-out AST is translated directly into glyph-core drawing commands (placing specific font glyphs at exact (x, y) coordinates, drawing fraction bars as vector paths).
+Optional LaTeX Compatibility: A glyph-math-latex feature can be enabled, providing a pest-based parser that converts standard LaTeX math strings (e.g., "\frac{x}{y^2}") into the MathExpr AST, giving users the best of both worlds.
+Why this wins: It’s typesafe, compiles in microseconds, integrates natively with Rust applications, and produces mathematically perfect spacing identical to TeX, but without the TeX macro-expansion overhead.
+4. Deep Dive: Full PDF Lifecycle (Write, Edit, Measure)
+A. Writing (glyph-pdf-writer)
+A low-level, append-only writer. It manages object IDs, cross-reference tables (XRef), and streams.
+Supports both standard and compressed object streams for optimal file size.
+Crates.io Strategy: Keep this crate dependency-free (except for flate2 for compression). It should be the go-to crate for anyone wanting to emit raw PDF bytes from Rust.
+B. Editing (glyph-pdf-editor)
+The Problem: Directly editing a PDF byte stream is a recipe for corruption.
+The Solution:
+glyph-pdf-parser reads the file into glyph-pdf-ir.
+glyph-pdf-editor provides a transactional API
+
+let mut doc = Editor::load("input.pdf")?;
+doc.replace_text(1, "Old Company Name", "TPT Solutions")?;
+doc.insert_image(1, Point::new(50.0, 50.0), "logo.png")?;
+doc.save("output.pdf")?; // Serializes IR, garbage-collects unused objects
+
+The IR abstracts away the horror of incremental updates, object streams, and font subsetting.
+C. Measuring (glyph-pdf-measure)
+Extracts precise metrics without full rasterization.
+Text Metrics: Uses glyph-font to calculate exact advance widths, ascents, and descents for any string in the PDF, accounting for embedded font subsets.
+Geometric Bounds: Calculates the tight bounding box of any path or content stream.
+Ink Coverage: Analyzes path fills and image CMYK/RGB values to estimate total ink coverage (crucial for your tpt-flight-control or commercial printing cost estimation).
+5. Crates.io Publication & Reuse Strategy
+To ensure these crates are adopted by the broader Rust community, they must be impeccably designed for reuse:
+Feature Flags: Every crate must be opt-in for heavy features.
+Example: glyph-math has default features = []. Users can opt into features = ["latex-parser"] or features = ["serde"] (for AST serialization).
+no_std Compatibility: glyph-core, glyph-pdf-ir, and glyph-math should be designed to be no_std compatible (using alloc), making them usable in WebAssembly (WASM) or embedded environments.
+Trait-Based Abstractions: Instead of hardcoding file I/O, use traits like Read/Write or a custom ResourceProvider trait. This allows users to load fonts or PDFs from memory, networks, or custom virtual filesystems.
+Comprehensive Documentation: Every public API must have /// doc comments with #[doc = include_str!("../examples/...")] to provide compile-tested, copy-pasteable examples on docs.rs.
+6. Synergy with tpt-telos (Your Agentic Compiler)
+This is where your unique stack shines. tpt-telos uses a Fourier-Motzkin SMT-style solver for QF_LRA (Quantifier-Free Linear Real Arithmetic) constraints.
+The Killer Feature: Constraint-Based Typesetting.
+Instead of hardcoding layout, glyph-typeset could allow developers to define layout constraints:
+
+// Example: Constraint-based layout powered by tpt-telos concepts
+let page = Page::new();
+page.add_constraint(Width(image) == Width(text_block));
+page.add_constraint(Y(image) == Y(text_block) + Height(text_block) + 10.0);
+page.solve_and_render();
+
+While full constraint-based layout is a long-term goal, starting with a robust, deterministic math typesetter (glyph-math) and IR-based PDF editor (glyph-pdf-editor) provides immediate, massive value.
+7. Actionable Next Steps (Phased Rollout)
+Phase 1: The Foundation (Weeks 1-3)
+Extract and finalize glyph-font (wrap ttf-parser, build glyph metric caching).
+Define the glyph-pdf-ir data structures (Pages, Content Streams, Resources, XRef).
+Publish glyph-core and glyph-font to crates.io as v0.1.0.
+Phase 2: The Math Revolution (Weeks 4-7)
+Build glyph-math AST and the TeX-style layout algorithm.
+Create a small CLI demo that takes a .math file (or LaTeX string) and outputs a perfectly typeset PDF using glyph-core and glyph-pdf-writer.
+Publish glyph-math to crates.io.
+Phase 3: The PDF Lifecycle (Weeks 8-12)
+Complete glyph-pdf-parser to populate the glyph-pdf-ir.
+Build glyph-pdf-measure (bounding boxes, text extraction).
+Build glyph-pdf-editor (transactional mutations).
+Integrate glyph-diag to flag corrupted or non-standard PDF structures during parsing.
+Phase 4: The High-Level Suite (Weeks 13+)
+Build glyph-typeset to tie paragraph layout, pagination, and glyph-math together.
+Release tpt-glyph v2.0.0 as a unified, documented workspace.
