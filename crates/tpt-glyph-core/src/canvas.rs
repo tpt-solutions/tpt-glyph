@@ -8,6 +8,7 @@
 // backend.
 
 use crate::graphics_state::RgbColor;
+use alloc::vec::Vec;
 
 /// RGBA pixel, 8 bits per channel, stored little-endian (R, G, B, A).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -91,6 +92,7 @@ impl Canvas {
     }
 
     /// Convert the canvas into an `image::RgbaImage` for export.
+    #[cfg(feature = "std")]
     pub fn to_rgba_image(&self) -> image::RgbaImage {
         let mut img = image::RgbaImage::new(self.width, self.height);
         for (i, px) in self.pixels.iter().enumerate() {
@@ -102,6 +104,7 @@ impl Canvas {
     }
 
     /// Write the canvas to a PNG file at `path`.
+    #[cfg(feature = "std")]
     pub fn save_png(&self, path: &std::path::Path) -> std::io::Result<()> {
         self.to_rgba_image()
             .save(path)

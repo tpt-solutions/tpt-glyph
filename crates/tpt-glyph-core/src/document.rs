@@ -6,7 +6,12 @@
 // that exploits the immutable `GraphicsState`.
 
 use crate::canvas::Canvas;
-use crate::error::{GlyphError, Result};
+use crate::error::Result;
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use crate::error::GlyphError;
+#[cfg(feature = "std")]
 use rayon::prelude::*;
 
 /// A single rendered page: the rasterized canvas at a target resolution.
@@ -61,6 +66,7 @@ pub trait PageRenderer {
 /// Because the renderer operates on an immutable `GraphicsState` seed and the
 /// `PageRenderer` trait guarantees no shared mutable state, rendering pages in
 /// parallel is data-race free by construction.
+#[cfg(feature = "std")]
 pub fn render_document_parallel<R: PageRenderer + Sync>(
     renderer: &R,
     page_indices: &[usize],
@@ -83,7 +89,7 @@ pub fn render_document_parallel<R: PageRenderer + Sync>(
     Ok(Document { pages })
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
     use crate::graphics_state::GraphicsState;

@@ -11,6 +11,7 @@ use crate::canvas::Canvas;
 use crate::error::Result;
 use crate::raster::SoftwareRasterizer;
 use crate::render::{DrawCommand, Rasterizer, RenderTree};
+use alloc::boxed::Box;
 
 /// A named rasterization backend.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

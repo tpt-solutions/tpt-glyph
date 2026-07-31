@@ -1,0 +1,20 @@
+[package]
+name = "tpt-glyph-pdf-ir"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Canonical immutable intermediate representation of a PDF document."
+keywords = ["pdf", "ir", "intermediate-representation", "document"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[features]
+default = ["std"]
+std = []
+serde = ["dep:serde"]

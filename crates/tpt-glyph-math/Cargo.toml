@@ -1,0 +1,25 @@
+[package]
+name = "tpt-glyph-math"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "TeX-style math typesetting: a strongly-typed MathExpr AST, the TeXbook Ch.17 layout algorithm, and emission to tpt-glyph-core draw commands."
+keywords = ["math", "typesetting", "tex", "latex", "layout"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+tpt-glyph-font = { path = "../tpt-glyph-font", default-features = false }
+tpt-glyph-core = { workspace = true, optional = true }
+pest = { version = "2", optional = true }
+pest_derive = { version = "2", optional = true }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+std = ["dep:tpt-glyph-core", "tpt-glyph-font/std"]
+latex-parser = ["std", "dep:pest", "dep:pest_derive"]
+serde = ["dep:serde"]

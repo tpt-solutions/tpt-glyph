@@ -6,9 +6,9 @@
 // Ghostscript reference renders, and emits a JSON report plus a CI exit code.
 
 use clap::{Parser, ValueEnum};
-use tpt_glyph_diff::{compare, load_rgba, FixtureReport, Thresholds, Verdict};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
+use tpt_glyph_diff::{compare, load_rgba, FixtureReport, Thresholds, Verdict};
 
 #[derive(Parser)]
 #[command(

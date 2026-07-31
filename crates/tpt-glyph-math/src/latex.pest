@@ -1,0 +1,44 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+program = { SOI ~ expr ~ EOI }
+
+expr = { term+ }
+
+term = { atom ~ (sup | sub)* }
+
+sup = { "^" ~ atom }
+sub = { "_" ~ atom }
+
+atom = _{ frac | sqrt | left_right | punct_space | command | group | number | identifier | symbol }
+
+group = { "{" ~ expr ~ "}" }
+
+frac = { "\\frac" ~ group ~ group }
+
+sqrt = { "\\sqrt" ~ ("[" ~ index_expr ~ "]")? ~ group }
+
+// A restricted `expr` for the bracketed root-index of `\sqrt[n]{...}`: it
+// must not treat a bare `]` as a generic symbol atom (that would let it
+// swallow the index's own closing bracket), so it uses `index_symbol`
+// instead of the general `symbol` rule.
+index_expr = { index_term+ }
+index_term = { index_atom ~ (sup | sub)* }
+index_atom = _{ frac | sqrt | left_right | punct_space | command | group | number | identifier | index_symbol }
+index_symbol = @{ "+" | "-" | "=" | "<" | ">" | "," | ";" | "*" | "/" | "!" | "'" }
+
+left_right = { "\\left" ~ delim ~ expr ~ "\\right" ~ delim }
+
+delim = @{ "(" | ")" | "[" | "]" | "." | "|" }
+
+punct_space = @{ "\\," | "\\;" | "\\!" }
+
+// `!"\\right"` keeps `\right` from being swallowed as a generic unknown
+// command atom while scanning the body of an enclosing `\left ... \right`
+// pair — it only ever appears as that pair's own terminator.
+command = @{ !"\\right" ~ "\\" ~ ASCII_ALPHA+ }
+
+number = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+
+identifier = @{ ASCII_ALPHA }
+
+symbol = @{ "+" | "-" | "=" | "<" | ">" | "," | ";" | "(" | ")" | "[" | "]" | "*" | "/" | "!" | "'" }

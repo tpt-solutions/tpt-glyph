@@ -1,0 +1,17 @@
+[package]
+name = "tpt-glyph-pdf-parser"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Robust PDF parsing into the canonical tpt-glyph-pdf-ir intermediate representation."
+keywords = ["pdf", "parser", "ir", "document"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+tpt-glyph-pdf-ir = { workspace = true }
+pdf = "0.9"
+thiserror = { workspace = true }

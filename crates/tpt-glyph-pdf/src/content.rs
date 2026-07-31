@@ -10,9 +10,6 @@
 use crate::error::{PdfError, Result};
 use crate::fonts::decode_pdf_string;
 use crate::xobject::decode_xobject;
-use tpt_glyph_core::geometry::{CubicBezier, Path, Point, Subpath, Transform};
-use tpt_glyph_core::graphics_state::{GraphicsState, LineCap, LineJoin, RgbColor};
-use tpt_glyph_core::render::{DrawCommand, RenderTree};
 use pdf::content::{
     Color, LineCap as PdfLineCap, LineJoin as PdfLineJoin, Matrix, Op, TextDrawAdjusted, Winding,
 };
@@ -20,6 +17,9 @@ use pdf::font::Widths as PdfWidths;
 use pdf::object::*;
 use pdf::primitive::Name;
 use pdf::primitive::PdfString;
+use tpt_glyph_core::geometry::{CubicBezier, Path, Point, Subpath, Transform};
+use tpt_glyph_core::graphics_state::{GraphicsState, LineCap, LineJoin, RgbColor};
+use tpt_glyph_core::render::{DrawCommand, RenderTree};
 
 /// Text-state parameters for a text object (`BT` … `ET`).
 ///

@@ -4,6 +4,7 @@
 //
 // Core 2D geometry primitives: points, transforms, subpaths, and Bézier curves.
 
+use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 /// A 2D point in user space.
@@ -19,21 +20,21 @@ impl Point {
     }
 }
 
-impl std::ops::Add for Point {
+impl core::ops::Add for Point {
     type Output = Point;
     fn add(self, rhs: Point) -> Point {
         Point::new(self.x + rhs.x, self.y + rhs.y)
     }
 }
 
-impl std::ops::Sub for Point {
+impl core::ops::Sub for Point {
     type Output = Point;
     fn sub(self, rhs: Point) -> Point {
         Point::new(self.x - rhs.x, self.y - rhs.y)
     }
 }
 
-impl std::ops::Mul<f64> for Point {
+impl core::ops::Mul<f64> for Point {
     type Output = Point;
     fn mul(self, rhs: f64) -> Point {
         Point::new(self.x * rhs, self.y * rhs)

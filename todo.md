@@ -216,4 +216,61 @@ Verification: `cargo test --workspace` (all pass), `cargo clippy --workspace
 --all-targets` (no warnings), `cargo fmt --all --check` (clean). The `wgpu` GPU
 backend and the actual `v1.0.0` tag/publish remain as the only outstanding items.
 
+---
+
+## v2.0 — The Comprehensive PDF & Typesetting Suite
+
+Source: `spec2.txt`. Phases below continue numbering from the v1.0 checklist
+above and are additive scope, not replacements for Phases 0–11.
+
+## Phase 12 — v2.0 Foundation: tpt-glyph-font & PDF IR
+
+- [x] Create `tpt-glyph-font` crate (wraps `ttf-parser`: TTF/OTF metric parsing, glyph outlining, kerning)
+- [x] Design `tpt-glyph-pdf-ir` data structures (Pages, Content Streams, Resources, XRef) as the canonical immutable PDF IR
+- [x] Reconcile existing `tpt-glyph-pdf` crate with the new `tpt-glyph-pdf-parser` / `tpt-glyph-pdf-ir` split (naming/migration decision)
+- [ ] Add `no_std` (+ `alloc`) compatibility groundwork for `tpt-glyph-core`
+- [ ] Publish `tpt-glyph-core` and `tpt-glyph-font` to crates.io as v0.1.0
+
+## Phase 13 — Math Typesetting Engine (`tpt-glyph-math`)
+
+- [ ] Scaffold `tpt-glyph-math` crate with `default-features = []`
+- [ ] Design strongly-typed `MathExpr` AST (`Fraction`, `Superscript`, `Identifier`, `Number`, etc.)
+- [ ] Implement TeX-style math layout algorithm (TeXbook Ch. 17): Display/Text/Script/ScriptScript styles
+- [ ] Implement math atom spacing rules (ORD, OP, BIN, REL, ...) using standard math kerning tables
+- [ ] Implement axis-height / rule-thickness calculation from the current font's x-height
+- [ ] Emit laid-out math AST as `tpt-glyph-core` draw commands (glyph placement, vector fraction bars)
+- [ ] Add optional `latex-parser` feature: pest-based LaTeX math string → `MathExpr` AST parser
+- [ ] Build CLI demo: `.math` file or LaTeX string → typeset PDF via `tpt-glyph-core` + `tpt-glyph-pdf-writer`
+- [ ] Publish `tpt-glyph-math` to crates.io
+
+## Phase 14 — Full PDF Lifecycle: Write, Edit, Measure
+
+- [ ] Build `tpt-glyph-pdf-writer`: dependency-free (except `flate2`), zero-allocation PDF object serialization, XRef/object-ID management, standard + compressed object streams
+- [ ] Complete `tpt-glyph-pdf-parser` to fully populate `tpt-glyph-pdf-ir`
+- [ ] Build `tpt-glyph-pdf-measure`: text metrics (advance widths, ascents/descents via `tpt-glyph-font`, including embedded font subsets), geometric bounding boxes, ink-coverage estimation
+- [ ] Build `tpt-glyph-pdf-editor`: transactional IR-mutation API (`Editor::load`, `replace_text`, `insert_image`, `save` with garbage collection of unused objects)
+- [ ] Integrate `tpt-glyph-diag` to flag corrupted/non-standard PDF structures during parsing
+
+## Phase 15 — High-Level Typesetting Suite
+
+- [ ] Build `tpt-glyph-typeset`: paragraph layout, pagination, page breaks
+- [ ] Integrate `tpt-glyph-math` into `tpt-glyph-typeset` document flow
+- [ ] Release `tpt-glyph` v2.0.0 as a unified, documented workspace
+
+## Phase 16 — Scaled Line-Measurement Tool
+
+- [ ] Design a per-page drawing-scale specification (e.g. `1:100`, `1/4"=1'-0"`), suppliable via CLI flag or config file and keyed by page number
+- [ ] Build `tools/tpt-glyph-measure`: standalone CLI that opens a PDF/PS page and reports the geometric length (in PDF units) of a given line/path, reusing `tpt-glyph-pdf-measure`'s geometry primitives (Phase 14)
+- [ ] Apply the page's scale factor to convert a measured length into real-world units, supporting documents where different pages use different scales
+- [ ] Support common scale conventions (architectural feet-inches ratios, engineering ratios like `1:50`) and common target units (mm/cm/m, in/ft)
+- [ ] Add unit tests: known geometry + scale → expected real-world length, including a mixed-scale multi-page fixture
+- [ ] Document the tool's usage (CLI flags, scale-spec format, worked example) in `docs/`
+
+## Cross-cutting (v2.0 crates.io & reuse goals)
+
+- [ ] Ensure `tpt-glyph-core`, `tpt-glyph-pdf-ir`, and `tpt-glyph-math` are `no_std` (+ `alloc`) compatible for WASM/embedded use
+- [ ] Use trait-based abstractions (`Read`/`Write` or a custom `ResourceProvider`) instead of hardcoded file I/O across new crates
+- [ ] Add `#[doc = include_str!("../examples/...")]` compile-tested examples to public APIs ahead of docs.rs publication
+- [ ] (Long-term/exploratory) Investigate constraint-based layout in `tpt-glyph-typeset`, inspired by `tpt-telos`'s QF_LRA solver concepts
+
 

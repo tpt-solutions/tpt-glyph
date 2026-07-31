@@ -7,12 +7,12 @@
 // raster output. These are end-to-end "does it render" checks; pixel fidelity is
 // covered by the Phase 1 visual-diff harness.
 
+use std::path::Path;
 use tpt_glyph_core::canvas::Canvas;
 use tpt_glyph_core::graphics_state::GraphicsState;
 use tpt_glyph_core::render::{DebugRasterizer, Rasterizer};
 use tpt_glyph_pdf::PdfDocument;
 use tpt_glyph_ps::Interpreter;
-use std::path::Path;
 
 fn fixtures_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))

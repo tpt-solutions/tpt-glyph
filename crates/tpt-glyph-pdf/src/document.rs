@@ -8,13 +8,13 @@
 
 use crate::content::{render_ops, TextState};
 use crate::error::{PdfError, Result};
+use pdf::file::{File, FileOptions, NoCache, NoLog};
+use pdf::object::Resolve;
+use pdf::object::*;
 use tpt_glyph_core::canvas::Canvas;
 use tpt_glyph_core::document::Page;
 use tpt_glyph_core::graphics_state::GraphicsState;
 use tpt_glyph_core::render::{DebugRasterizer, Rasterizer, RenderTree};
-use pdf::file::{File, FileOptions, NoCache, NoLog};
-use pdf::object::Resolve;
-use pdf::object::*;
 
 /// Concrete `File` type used by this crate: in-memory backend with no caches.
 type PdfFile = File<Vec<u8>, NoCache, NoCache, NoLog>;

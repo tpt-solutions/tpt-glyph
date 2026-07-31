@@ -4,6 +4,7 @@
 //
 // Crate-wide error type and `Result` alias.
 
+use alloc::string::String;
 use thiserror::Error;
 
 /// Errors produced by the tpt-glyph-core engine.
@@ -33,9 +34,10 @@ pub enum GlyphError {
     #[error("resource limit exceeded: {0}")]
     ResourceLimit(String),
 
+    #[cfg(feature = "std")]
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }
 
 /// Convenience `Result` alias for tpt-glyph-core operations.
-pub type Result<T> = std::result::Result<T, GlyphError>;
+pub type Result<T> = core::result::Result<T, GlyphError>;

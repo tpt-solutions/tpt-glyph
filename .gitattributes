@@ -1,0 +1,3 @@
+# PDF files are byte-addressed (xref offsets, stream lengths): never normalize
+# line endings, or git's core.autocrlf will corrupt the offsets on checkout.
+*.pdf binary

@@ -8,10 +8,10 @@
 // so a cross-page state-leak bug would surface as a page picking up the wrong
 // color/geometry, or as non-deterministic output across repeated parallel runs.
 
+use rayon::prelude::*;
 use tpt_glyph_core::canvas::Canvas;
 use tpt_glyph_core::graphics_state::GraphicsState;
 use tpt_glyph_pdf::PdfDocument;
-use rayon::prelude::*;
 
 /// Locate the `multipage-4.pdf` fixture shipped in the repo's fixture corpus.
 fn fixture_path() -> std::path::PathBuf {

@@ -50,17 +50,21 @@ pub enum PsError {
 impl From<PsError> for tpt_glyph_core::error::GlyphError {
     fn from(e: PsError) -> Self {
         match e {
-            PsError::OperandStackUnderflow => tpt_glyph_core::error::GlyphError::OperandStackUnderflow,
+            PsError::OperandStackUnderflow => {
+                tpt_glyph_core::error::GlyphError::OperandStackUnderflow
+            }
             PsError::StateStackUnderflow => tpt_glyph_core::error::GlyphError::StateStackUnderflow,
-            PsError::UnknownOperator(name) => tpt_glyph_core::error::GlyphError::UnknownOperator(name),
+            PsError::UnknownOperator(name) => {
+                tpt_glyph_core::error::GlyphError::UnknownOperator(name)
+            }
             PsError::Parse(m) => tpt_glyph_core::error::GlyphError::Parse(m),
             PsError::Lex { message, .. } => tpt_glyph_core::error::GlyphError::Parse(message),
             PsError::TypeError { expected, found } => tpt_glyph_core::error::GlyphError::Parse(
                 format!("type error: expected {expected}, found {found}"),
             ),
-            PsError::Range { operator, value } => {
-                tpt_glyph_core::error::GlyphError::Parse(format!("range error in {operator}: {value}"))
-            }
+            PsError::Range { operator, value } => tpt_glyph_core::error::GlyphError::Parse(
+                format!("range error in {operator}: {value}"),
+            ),
             PsError::Dict(m) => tpt_glyph_core::error::GlyphError::Parse(m),
             PsError::ExecStackUnderflow => {
                 tpt_glyph_core::error::GlyphError::Parse("execution stack underflow".into())

@@ -12,24 +12,29 @@ keywords = ["pdf", "postscript", "rendering", "graphics", "rasterizer"]
 categories = ["graphics", "rendering", "multimedia::images"]
 
  [dependencies]
-rayon.workspace = true
-serde.workspace = true
-anyhow.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
-image = "0.25"
-pdf = "0.9"
+rayon = { workspace = true, optional = true }
+# Declared inline (not via workspace) so `default-features = false` takes effect:
+# serde must be std-free here for the no_std build, and thiserror's derives must
+# not emit `impl std::error::Error` (which references `std`).
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+thiserror = { version = "1.0", default-features = false }
+image = { version = "0.25", optional = true }
 
 # Optional accelerated backends (Phase 6).
 raqote = { workspace = true, optional = true }
 wgpu = { workspace = true, optional = true }
 
 [features]
-default = []
+default = ["std"]
+# `std` re-enables the platform/std-only conveniences (file export, the rayon
+# thread pool). With `--no-default-features` the crate is `#![no_std]` +
+# `alloc`, so it can target WASM/embedded; the reference rasterizer, geometry,
+# and immutable graphics state remain fully available.
+std = ["dep:rayon", "dep:image"]
 # CPU-backed rasterization via raqote; used as the deterministic fallback path.
-raqote-backend = ["dep:raqote"]
+raqote-backend = ["dep:raqote", "std"]
 # GPU-backed rasterization via wgpu; not yet wired to a full pipeline (Phase 6).
-wgpu-backend = ["dep:wgpu"]
+wgpu-backend = ["dep:wgpu", "std"]
 
 [dev-dependencies]
 criterion = "0.5"

@@ -17,6 +17,7 @@ use crate::error::Result;
 use crate::geometry::{CubicBezier, Path, Point, Transform};
 use crate::graphics_state::{LineCap, LineJoin, RgbColor};
 use crate::render::{DrawCommand, RenderTree};
+use alloc::vec::Vec;
 
 /// Maximum recursion depth when flattening Bézier curves. Guards against
 /// pathological inputs without a global quota.
@@ -164,7 +165,7 @@ fn scanline_fill_into(
         if edges.is_empty() {
             continue;
         }
-        edges.sort_by(|p, q| p.0.partial_cmp(&q.0).unwrap_or(std::cmp::Ordering::Equal));
+        edges.sort_by(|p, q| p.0.partial_cmp(&q.0).unwrap_or(core::cmp::Ordering::Equal));
 
         if even_odd {
             let mut i = 0;
@@ -282,7 +283,7 @@ fn add_cap_to(
             let steps = 8usize;
             let mut pts = Vec::with_capacity(steps + 1);
             for s in 0..=steps {
-                let ang = (s as f64 / steps as f64) * std::f64::consts::PI;
+                let ang = (s as f64 / steps as f64) * core::f64::consts::PI;
                 let ox = dir.0 * hw * ang.cos() - dir.1 * hw * ang.sin();
                 let oy = dir.0 * hw * ang.sin() + dir.1 * hw * ang.cos();
                 pts.push(Point::new(p.x + ox, p.y + oy));

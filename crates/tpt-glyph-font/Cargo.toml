@@ -1,0 +1,19 @@
+[package]
+name = "tpt-glyph-font"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Font metric parsing and glyph outlining for TTF/OTF via ttf-parser."
+keywords = ["font", "ttf", "otf", "typography", "glyph"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+ttf-parser = "0.25"
+
+[features]
+default = ["std"]
+std = []

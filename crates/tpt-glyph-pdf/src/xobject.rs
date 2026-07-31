@@ -9,12 +9,12 @@
 
 use crate::content::{render_ops, TextState};
 use crate::error::{PdfError, Result};
-use tpt_glyph_core::geometry::{CubicBezier, Path, Point, Subpath};
-use tpt_glyph_core::graphics_state::GraphicsState;
-use tpt_glyph_core::render::{DrawCommand, RenderTree};
 use pdf::content::FormXObject;
 use pdf::content::Matrix;
 use pdf::object::*;
+use tpt_glyph_core::geometry::{CubicBezier, Path, Point, Subpath};
+use tpt_glyph_core::graphics_state::GraphicsState;
+use tpt_glyph_core::render::{DrawCommand, RenderTree};
 
 /// Render a resolved XObject into `tree`, inheriting the current graphics state.
 pub fn decode_xobject(

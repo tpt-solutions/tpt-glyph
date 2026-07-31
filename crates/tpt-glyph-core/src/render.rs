@@ -12,6 +12,7 @@ use crate::canvas::Canvas;
 use crate::error::Result;
 use crate::geometry::{Path, Point, Transform};
 use crate::graphics_state::{GraphicsState, RgbColor};
+use alloc::vec::Vec;
 
 /// A single atomic drawing operation emitted by the operator pipeline.
 ///
