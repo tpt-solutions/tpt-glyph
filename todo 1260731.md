@@ -7,7 +7,7 @@ TPT Glyph: a secure, sandboxed, multi-threaded PDF/PostScript rendering engine w
 ## Phase 0 — Project Setup & Licensing
 
 - [x] Initialize Cargo workspace (`tpt-glyph`) with member crates
-- [x] Create crate layout: `crates/glyph-core` (engine lib), `crates/glyph-cli` (binary), `crates/glyph-kg` (knowledge graph), `crates/glyph-diag` (AI diagnostic tool)
+- [x] Create crate layout: `crates/tpt-glyph-core` (engine lib), `crates/tpt-glyph-cli` (binary), `crates/tpt-glyph-kg` (knowledge graph), `crates/tpt-glyph-diag` (AI diagnostic tool)
 - [x] Add `LICENSE-MIT` (Copyright TPT Solutions)
 - [x] Add `LICENSE-APACHE` (Copyright TPT Solutions)
 - [x] Add `license = "MIT OR Apache-2.0"` to all crate `Cargo.toml` files
@@ -79,8 +79,8 @@ glyph-outline handling lands in Phase 5.
 - [x] Add image/XObject decoding groundwork (raw/Flate-encoded streams)
 - [x] Run PDF rendering output through Phase 1 harness against sample `.pdf` files
 
-Phase 5 complete: `glyph-pdf` opens PDFs via the `pdf` crate, walks the page
-tree, decodes content-stream operators onto the shared glyph-core pipeline
+Phase 5 complete: `tpt-glyph-pdf` opens PDFs via the `pdf` crate, walks the page
+tree, decodes content-stream operators onto the shared tpt-glyph-core pipeline
 (path construction/painting, CTM, color, line attributes, ExtGState), and
 implements PDF-specific text positioning (`Tf`/`Tm`/`Td`/`Tj`/`TJ`) plus XObject
 (Form + Image) handling. Baseline font/string decoding (PDFDocEncoding,
@@ -108,7 +108,7 @@ and the Phase 1 harness now renders PDF candidates.
 
 ## Phase 8 — CLI & Library Crate Polish
 
-- [x] Design public `glyph-core` library API (documents, render options, output targets)
+- [x] Design public `tpt-glyph-core` library API (documents, render options, output targets)
 - [x] Implement `glyph` CLI binary: render/convert commands (PDF/PS → PNG/other raster formats)
 - [x] Add CLI options mirroring common Ghostscript flags where sensible (resolution, page range, output format)
 - [x] Write `rustdoc` documentation and usage examples for the library crate
@@ -117,7 +117,7 @@ and the Phase 1 harness now renders PDF candidates.
 
 ## Phase 9 — AI-Assisted Diagnostic Tool
 
-- [x] Design `glyph-diag` companion tool consuming the Phase 3 knowledge graph
+- [x] Design `tpt-glyph-diag` companion tool consuming the Phase 3 knowledge graph
 - [x] Implement operator coverage reporting (which PS/PDF operators are implemented vs missing)
 - [x] Implement Ghostscript-diff-driven analysis (surface which fixtures fail and why, using Phase 1 harness output)
 - [x] Implement AI/LLM-assisted fix suggestion feature (propose likely causes/fixes from diff + KG context)
@@ -155,19 +155,19 @@ implemented but previously left unchecked, now marked done:
   `Page`/`Document`, `rayon` concurrency, immutability tests, and `docs/architecture.md`
   are all present.
 - **Phase 8** — `glyph` CLI render command (PS/PDF → PNG), `--dpi`, `--pages` range,
-  `--backend`, `--parallel` options, and `crates/glyph-cli/tests/render.rs` integration
+  `--backend`, `--parallel` options, and `crates/tpt-glyph-cli/tests/render.rs` integration
   tests all exist.
 
 Work completed this session:
 
-- **Phase 6** — Added `crates/glyph-core/src/raster.rs`: a real reference software
+- **Phase 6** — Added `crates/tpt-glyph-core/src/raster.rs`: a real reference software
   rasterizer (adaptive Bézier flattening, scanline fill with non-zero + even-odd rules,
-  segment-expansion stroking with line caps). Added `crates/glyph-core/src/backend.rs`:
+  segment-expansion stroking with line caps). Added `crates/tpt-glyph-core/src/backend.rs`:
   `Backend`/`SelectedBackend` abstraction with runtime auto-selection. Added `Point`
   arithmetic operators. Kept `DebugRasterizer` for existing tests.
 - **Phase 7** — Wired concurrent per-page PDF rendering into the CLI via `rayon`
   (`--parallel`), reusing the immutable-state safety model.
-- **Phase 9** — Added `glyph-diag diff` subcommand that consumes a `glyph-diff` report,
+- **Phase 9** — Added `tpt-glyph-diag diff` subcommand that consumes a `tpt-glyph-diff` report,
   prints per-fixture metric hints, and cross-references failures with the knowledge graph
   to suggest related unimplemented operators.
 - **Phase 0/1** — Added `docs/CONTRIBUTING.md`; updated `README.md` status table.
@@ -188,20 +188,20 @@ Still outstanding (not yet implemented):
 
 Completed the remaining checklist items across Phases 6, 7, 8, 10, and 11:
 
-- **Phase 6** — Added `glyph-core::backends::raqote` (CPU rasterizer via `raqote`,
+- **Phase 6** — Added `tpt-glyph-core::backends::raqote` (CPU rasterizer via `raqote`,
   gated behind `raqote-backend`), wired into `Backend` selection as `CpuRaqote` and
-  auto-selected when compiled in. `glyph-cli` selects it via `--backend cpu-raqote`.
+  auto-selected when compiled in. `tpt-glyph-cli` selects it via `--backend cpu-raqote`.
   Added a backend-parity test (`backends::raqote::tests`) asserting reference and
   raqote render the same document equivalently (edge-only divergence). Added a
   `criterion` benchmark (`benches/backends.rs`) comparing both backends.
-- **Phase 7** — Added `tools/glyph-fixtures` to generate `fixtures/pdf/multipage-4.pdf`
-  (4 distinct colored pages). Added `crates/glyph-pdf/tests/concurrency.rs`: a
+- **Phase 7** — Added `tools/tpt-glyph-fixtures` to generate `fixtures/pdf/multipage-4.pdf`
+  (4 distinct colored pages). Added `crates/tpt-glyph-pdf/tests/concurrency.rs`: a
   sequential render test and a `rayon` stress test proving deterministic,
   leak-free concurrent per-page rendering.
-- **Phase 8** — Added a runnable crate-level doctest to `glyph-core` and an
-  immutability doctest to `GraphicsState`. Polished `glyph render --help` (clearer
+- **Phase 8** — Added a runnable crate-level doctest to `tpt-glyph-core` and an
+  immutability doctest to `GraphicsState`. Polished `tpt-glyph render --help` (clearer
   about/argument docs and backend enum help).
-- **Phase 10** — Added `glyph_ps::ResourceLimits` (operand-stack size, exec-stack
+- **Phase 10** — Added `tpt_glyph_ps::ResourceLimits` (operand-stack size, exec-stack
   depth, draw-command count, instruction budget) enforced fail-closed in the
   interpreter, with `strict()` for untrusted input and 4 new regression tests.
   Added `GlyphError::ResourceLimit` + `PsError::ResourceLimit`. Added `SECURITY.md`
@@ -209,10 +209,10 @@ Completed the remaining checklist items across Phases 6, 7, 8, 10, and 11:
   (`ps_interpreter`, `pdf_content`). Documented fuzzing in `CONTRIBUTING.md`.
 - **Phase 11** — Finalized `README.md` (status table, usage examples, security
   section), wrote `CHANGELOG.md`, and added `keywords`/`categories` crate metadata
-  to `glyph-core` and `glyph-cli`.
+  to `tpt-glyph-core` and `tpt-glyph-cli`.
 
 Verification: `cargo test --workspace` (all pass), `cargo clippy --workspace
---all-targets` and `cargo clippy -p glyph-core --features raqote-backend
+--all-targets` and `cargo clippy -p tpt-glyph-core --features raqote-backend
 --all-targets` (no warnings), `cargo fmt --all --check` (clean). The `wgpu` GPU
 backend and the actual `v1.0.0` tag/publish remain as the only outstanding items.
 

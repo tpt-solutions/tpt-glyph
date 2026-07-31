@@ -1,0 +1,16 @@
+[package]
+name = "tpt-glyph-fixtures"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Generates synthetic multi-page PDF fixtures for TPT Glyph stress tests."
+
+[[bin]]
+name = "tpt-glyph-fixtures"
+path = "src/main.rs"
+
+[dependencies]

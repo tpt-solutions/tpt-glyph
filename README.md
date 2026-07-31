@@ -50,14 +50,14 @@ simultaneously across CPU cores — safely, by construction.
 
 | Crate | Purpose |
 |-------|---------|
-| `crates/glyph-core` | Engine library: immutable `GraphicsState`, geometry, canvas, document model, reference + raqote rasterizers, backend selection. |
-| `crates/glyph-cli` | `glyph` binary — render/convert commands. |
-| `crates/glyph-kg`  | Rendering Pipeline Knowledge Graph (operators → graphics state → pixel buffer). |
-| `crates/glyph-diag`| AI-assisted diagnostic tool consuming the knowledge graph. |
-| `crates/glyph-ps`  | PostScript interpreter (tokenizer, parser, stacks, KG-driven dispatch). |
-| `crates/glyph-pdf` | PDF parsing & rendering (page tree, content streams, fonts/XObjects). |
-| `tools/glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript reference). |
-| `tools/glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
+| `crates/tpt-glyph-core` | Engine library: immutable `GraphicsState`, geometry, canvas, document model, reference + raqote rasterizers, backend selection. |
+| `crates/tpt-glyph-cli` | `tpt-glyph` binary — render/convert commands. |
+| `crates/tpt-glyph-kg`  | Rendering Pipeline Knowledge Graph (operators → graphics state → pixel buffer). |
+| `crates/tpt-glyph-diag`| AI-assisted diagnostic tool consuming the knowledge graph. |
+| `crates/tpt-glyph-ps`  | PostScript interpreter (tokenizer, parser, stacks, KG-driven dispatch). |
+| `crates/tpt-glyph-pdf` | PDF parsing & rendering (page tree, content streams, fonts/XObjects). |
+| `tools/tpt-glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript reference). |
+| `tools/tpt-glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
 
 ### Knowledge Graph
 
@@ -73,19 +73,19 @@ Render a document to PNG with the CLI:
 
 ```sh
 # Render all pages of a PDF at 150 DPI, concurrently, auto backend.
-glyph render input.pdf ./out --dpi 150 --parallel
+tpt-glyph render input.pdf ./out --dpi 150 --parallel
 
 # Render a specific page range with the raqote CPU backend.
-glyph render doc.ps ./out --pages 2-5 --backend cpu-raqote
+tpt-glyph render doc.ps ./out --pages 2-5 --backend cpu-raqote
 ```
 
 Use the library directly:
 
 ```rust,no_run
-use glyph_core::backend::SelectedBackend;
-use glyph_core::geometry::{CubicBezier, Path, Point, Subpath};
-use glyph_core::graphics_state::{GraphicsState, RgbColor};
-use glyph_core::render::RenderTree;
+use tpt_glyph_core::backend::SelectedBackend;
+use tpt_glyph_core::geometry::{CubicBezier, Path, Point, Subpath};
+use tpt_glyph_core::graphics_state::{GraphicsState, RgbColor};
+use tpt_glyph_core::render::RenderTree;
 
 let mut tree = RenderTree::new(64, 64);
 let state = GraphicsState::new().with_fill_color(RgbColor::new(0.9, 0.2, 0.1));
@@ -111,7 +111,7 @@ When rendering documents from untrusted sources, enable the strict resource
 limits so a malicious program cannot exhaust memory, stack depth, or CPU:
 
 ```rust,no_run
-use glyph_ps::{Interpreter, ResourceLimits};
+use tpt_glyph_ps::{Interpreter, ResourceLimits};
 
 let mut interp = Interpreter::with_limits(612, 792, ResourceLimits::strict());
 let _ = interp.run_source("(untrusted).ps source");

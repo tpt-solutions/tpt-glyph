@@ -25,14 +25,14 @@ passes before opening a pull request.
 
 | Path | Purpose |
 |------|---------|
-| `crates/glyph-core` | Engine: immutable `GraphicsState`, geometry, canvas, rasterizer, backends. |
-| `crates/glyph-cli` | The `glyph` binary (render/convert commands). |
-| `crates/glyph-kg` | Knowledge graph (operators → state → pixel buffer). |
-| `crates/glyph-diag` | AI-assisted diagnostic tool. |
-| `crates/glyph-ps` | PostScript interpreter. |
-| `crates/glyph-pdf` | PDF parsing/rendering. |
-| `tools/glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript). |
-| `tools/glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
+| `crates/tpt-glyph-core` | Engine: immutable `GraphicsState`, geometry, canvas, rasterizer, backends. |
+| `crates/tpt-glyph-cli` | The `glyph` binary (render/convert commands). |
+| `crates/tpt-glyph-kg` | Knowledge graph (operators → state → pixel buffer). |
+| `crates/tpt-glyph-diag` | AI-assisted diagnostic tool. |
+| `crates/tpt-glyph-ps` | PostScript interpreter. |
+| `crates/tpt-glyph-pdf` | PDF parsing/rendering. |
+| `tools/tpt-glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript). |
+| `tools/tpt-glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
 | `fuzz/` | `cargo-fuzz` targets for the parser/interpreter (Phase 10). |
 | `fixtures/` | Visual-diff corpus and generated renders. |
 | `docs/` | Architecture and testing documentation. |
@@ -44,10 +44,10 @@ passes before opening a pull request.
    than mutating a global. This is what makes concurrent per-page rendering safe.
 2. **Backend-agnostic pipeline.** Operators emit `DrawCommand`s into a
    `RenderTree`. A `Rasterizer` (currently the reference software backend in
-   `glyph-core::raster`, with the optional `raqote` CPU backend) turns the tree
+   `tpt-glyph-core::raster`, with the optional `raqote` CPU backend) turns the tree
    into pixels. GPU/CPU backends implement the same trait.
 3. **Knowledge-graph-driven operators.** The interpreter dispatch table is
-   derived from the `glyph-kg` catalog; the `glyph-diag` tool verifies the two
+   derived from the `tpt-glyph-kg` catalog; the `tpt-glyph-diag` tool verifies the two
    stay in sync.
 4. **Fail closed on untrusted input.** The PostScript interpreter enforces
    `ResourceLimits` (operand-stack size, exec-stack depth, draw-command count,
@@ -71,9 +71,9 @@ See [docs/testing.md](./docs/testing.md). In short: add a fixture to
 ### Knowledge graph & diagnostics
 
 ```sh
-cargo run -p glyph-diag -- coverage     # operator coverage report
-cargo run -p glyph-diag -- validate     # dispatch table vs graph consistency
-cargo run -p glyph-diag -- build --export fixtures/kg.json
+cargo run -p tpt-glyph-diag -- coverage     # operator coverage report
+cargo run -p tpt-glyph-diag -- validate     # dispatch table vs graph consistency
+cargo run -p tpt-glyph-diag -- build --export fixtures/kg.json
 ```
 
 ### Fuzzing untrusted input (Phase 10)

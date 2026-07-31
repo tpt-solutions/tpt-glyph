@@ -1,0 +1,27 @@
+[package]
+name = "tpt-glyph-diag"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "AI-assisted diagnostic tooling for TPT Glyph, built on the rendering knowledge graph."
+
+[[bin]]
+name = "tpt-glyph-diag"
+path = "src/main.rs"
+
+[dependencies]
+tpt-glyph-core.workspace = true
+tpt-glyph-kg.workspace = true
+tpt-glyph-diff = { path = "../../tools/tpt-glyph-diff", version = "0.1.0" }
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]

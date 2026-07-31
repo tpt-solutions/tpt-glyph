@@ -65,8 +65,8 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Build glyph-cli + glyph-diff
-        run: cargo build -p glyph-cli -p glyph-diff --release
+      - name: Build tpt-glyph-cli + tpt-glyph-diff
+        run: cargo build -p tpt-glyph-cli -p tpt-glyph-diff --release
       - name: Set up Docker (for Ghostscript references)
         uses: docker/setup-buildx-action@v3
       - name: Build Ghostscript image
@@ -89,17 +89,17 @@ jobs:
         run: |
           for f in fixtures/ps/*.ps; do
             name=$(basename "$f" .ps)
-            ./target/release/glyph render "$f" fixtures/candidate --dpi 72
+            ./target/release/tpt-glyph render "$f" fixtures/candidate --dpi 72
           done
           for f in fixtures/pdf/*.pdf; do
             name=$(basename "$f" .pdf)
-            ./target/release/glyph render "$f" fixtures/candidate --dpi 72
+            ./target/release/tpt-glyph render "$f" fixtures/candidate --dpi 72
           done
       - name: Run diff harness
         # Candidates are produced above; missing references (e.g. when Docker is
         # unavailable) are reported as pending (non-fatal).
         run: |
-          cargo run -p glyph-diff -- \
+          cargo run -p tpt-glyph-diff -- \
             --reference fixtures/reference \
             --candidate fixtures/candidate \
             --thresholds fixtures/thresholds.json \

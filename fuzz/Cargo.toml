@@ -1,5 +1,5 @@
 [package]
-name = "glyph-fuzz"
+name = "tpt-glyph-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -9,9 +9,9 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-glyph-core = { path = "../crates/glyph-core" }
-glyph-ps = { path = "../crates/glyph-ps" }
-glyph-pdf = { path = "../crates/glyph-pdf" }
+tpt-glyph-core = { path = "../crates/tpt-glyph-core" }
+tpt-glyph-ps = { path = "../crates/tpt-glyph-ps" }
+tpt-glyph-pdf = { path = "../crates/tpt-glyph-pdf" }
 
 [[bin]]
 name = "ps_interpreter"

@@ -1,0 +1,31 @@
+[package]
+name = "tpt-glyph-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Command-line interface for the TPT Glyph PDF/PostScript rendering engine."
+keywords = ["pdf", "postscript", "render", "cli", "rasterizer"]
+categories = ["command-line-utilities", "graphics"]
+
+[[bin]]
+name = "tpt-glyph"
+path = "src/main.rs"
+
+[dependencies]
+tpt-glyph-core = { workspace = true, features = ["raqote-backend"] }
+tpt-glyph-kg.workspace = true
+tpt-glyph-ps.workspace = true
+tpt-glyph-pdf = { workspace = true }
+
+clap.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+rayon.workspace = true
+
+[dev-dependencies]
+assert_cmd = "2.0"

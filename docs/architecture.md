@@ -14,14 +14,14 @@ mutate any piece of state at any time.
 ## Decision
 
 In TPT Glyph, the graphics state is represented by the immutable struct
-`GraphicsState` (`crates/glyph-core/src/graphics_state.rs`). Operators **do not
+`GraphicsState` (`crates/tpt-glyph-core/src/graphics_state.rs`). Operators **do not
 mutate** the state; instead, an operator receives the current `GraphicsState` and
 returns a *new* state (e.g. `GraphicsState::with_stroke_color`,
 `GraphicsState::concat_transform`). The new state is then threaded into subsequent
 operators or saved/restored via `gsave`/`grestore` stacks.
 
 The rendering pipeline operates on this context and emits draw commands into a
-backend-agnostic `Canvas` (`crates/glyph-core/src/canvas.rs`), which owns a
+backend-agnostic `Canvas` (`crates/tpt-glyph-core/src/canvas.rs`), which owns a
 row-major RGBA8 buffer.
 
 ## Consequences
@@ -47,7 +47,7 @@ row-major RGBA8 buffer.
 
 ## Relationship to the Knowledge Graph
 
-The Rendering Pipeline Knowledge Graph (`crates/glyph-kg`) explicitly models the
+The Rendering Pipeline Knowledge Graph (`crates/tpt-glyph-kg`) explicitly models the
 "Graphics State" as an isolated sub-graph of nodes (color, line width, CTM, clip
 path). The interpreter's operator dispatch table is generated/validated against
 this graph, guaranteeing that every operator's effect on the isolated graphics

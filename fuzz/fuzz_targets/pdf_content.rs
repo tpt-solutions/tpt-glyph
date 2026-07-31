@@ -4,7 +4,7 @@
 //
 // Fuzzes the PDF rendering path with adversarial input. We render a single
 // synthetic page whose content stream is the fuzz bytes; this exercises the
-// `pdf` crate decoder, the glyph-pdf content interpreter, and the rasterizer.
+// `pdf` crate decoder, the tpt-glyph-pdf content interpreter, and the rasterizer.
 // Run with: `cargo +nightly fuzz run pdf_content`.
 
 #![no_main]
@@ -27,7 +27,7 @@ fuzz_target!(|data: &[u8]| {
         content.len(),
         content
     );
-    let doc = match glyph_pdf::PdfDocument::from_bytes(body.into_bytes()) {
+    let doc = match tpt_glyph_pdf::PdfDocument::from_bytes(body.into_bytes()) {
         Ok(d) => d,
         Err(_) => return,
     };
@@ -35,5 +35,5 @@ fuzz_target!(|data: &[u8]| {
         return;
     }
     // Rasterize must not panic/hang/OOM on adversarial content.
-    let _ = glyph_pdf::render_page(&doc, 0, glyph_core::graphics_state::GraphicsState::new());
+    let _ = tpt_glyph_pdf::render_page(&doc, 0, tpt_glyph_core::graphics_state::GraphicsState::new());
 });

@@ -4,7 +4,7 @@
 #
 # Generates Ghostscript reference renders (requires Docker) and TPT Glyph
 # candidate renders for every fixture in fixtures/ps/*.ps and fixtures/pdf/*.pdf,
-# then runs glyph-diff. Mirrors the CI visual-diff job for local development.
+# then runs tpt-glyph-diff. Mirrors the CI visual-diff job for local development.
 #
 # Usage:
 #   pwsh tools/run-diff.ps1
@@ -59,18 +59,18 @@ foreach ($f in Get-ChildItem (Join-Path $fixtures "ps") -Filter *.ps) {
     $name = $f.BaseName
     $out = Join-Path $candidateDir "$name.png"
     Write-Host "TPT Glyph: $name.ps -> candidate/$name.png"
-    & $cargo run -q -p glyph-cli -- render $f.FullName $candidateDir --dpi $Dpi | Out-Null
+    & $cargo run -q -p tpt-glyph-cli -- render $f.FullName $candidateDir --dpi $Dpi | Out-Null
 }
 
 foreach ($f in Get-ChildItem (Join-Path $fixtures "pdf") -Filter *.pdf) {
     $name = $f.BaseName
     $out = Join-Path $candidateDir "$name.png"
     Write-Host "TPT Glyph: $name.pdf -> candidate/$name.png"
-    & $cargo run -q -p glyph-cli -- render $f.FullName $candidateDir --dpi $Dpi | Out-Null
+    & $cargo run -q -p tpt-glyph-cli -- render $f.FullName $candidateDir --dpi $Dpi | Out-Null
 }
 
 # --- 3. Run the diff harness ------------------------------------------------
-& $cargo run -q -p glyph-diff -- `
+& $cargo run -q -p tpt-glyph-diff -- `
     --reference $referenceDir `
     --candidate $candidateDir `
     --thresholds (Join-Path $fixtures "thresholds.json") `

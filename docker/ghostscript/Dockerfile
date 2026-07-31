@@ -1,7 +1,7 @@
 # Ghostscript reference renderer for the TPT Glyph visual-diff harness.
 #
 # Builds/runs upstream Ghostscript so CI can produce reference PNGs from the
-# fixture corpus, which `tools/glyph-diff` then compares against TPT Glyph output.
+# fixture corpus, which `tools/tpt-glyph-diff` then compares against TPT Glyph output.
 FROM debian:bookworm-slim
 
 RUN apt-get update \

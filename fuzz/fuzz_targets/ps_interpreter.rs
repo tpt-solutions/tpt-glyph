@@ -14,10 +14,10 @@ fuzz_target!(|data: &[u8]| {
     // Treat the input as UTF-8 text (PostScript is a text language). Invalid
     // bytes are replaced, which still exercises the tokenizer's error paths.
     let src = String::from_utf8_lossy(data);
-    let mut interp = glyph_ps::Interpreter::with_limits(
+    let mut interp = tpt_glyph_ps::Interpreter::with_limits(
         600,
         800,
-        glyph_ps::ResourceLimits::strict(),
+        tpt_glyph_ps::ResourceLimits::strict(),
     );
     // Errors are expected and must NOT panic/abort. We only care about crashes,
     // hangs, or OOM.

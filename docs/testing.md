@@ -16,13 +16,13 @@ fixtures/
   thresholds.json     Pass/fail thresholds
   diff-report.json    Latest JSON report (generated)
 tools/
-  glyph-diff/         Pixel-diff comparison crate (MSE, peak error, SSIM)
-  run-diff.ps1        Local runner: generates references + runs glyph-diff
+  tpt-glyph-diff/         Pixel-diff comparison crate (MSE, peak error, SSIM)
+  run-diff.ps1        Local runner: generates references + runs tpt-glyph-diff
 ```
 
 ## Metrics & thresholds
 
-`tools/glyph-diff` compares two equal-sized RGBA images and reports:
+`tools/tpt-glyph-diff` compares two equal-sized RGBA images and reports:
 
 | Metric | Meaning | Default threshold |
 |--------|---------|-------------------|
@@ -47,11 +47,11 @@ done
 
 # 2. Render TPT Glyph candidates for every fixture (PS + PDF):
 for f in fixtures/ps/*.ps fixtures/pdf/*.pdf; do
-  cargo run -p glyph-cli -- render "$f" fixtures/candidate --dpi 72
+  cargo run -p tpt-glyph-cli -- render "$f" fixtures/candidate --dpi 72
 done
 
 # 3. Compare:
-cargo run -p glyph-diff -- \
+cargo run -p tpt-glyph-diff -- \
   --reference fixtures/reference --candidate fixtures/candidate \
   --thresholds fixtures/thresholds.json --report fixtures/diff-report.json \
   --missing-reference pending
@@ -69,7 +69,7 @@ pwsh tools/run-diff.ps1 -SkipReferences   # reuse existing references
 
 The `visual-diff` job in `.github/workflows/ci.yml` builds the Ghostscript image,
 renders references for all `fixtures/ps/*.ps` and `fixtures/pdf/*.pdf`, renders
-the matching TPT Glyph candidates via `glyph`, and runs `glyph-diff`. Missing
+the matching TPT Glyph candidates via `glyph`, and runs `tpt-glyph-diff`. Missing
 references (e.g. when Docker is unavailable) are reported as **pending**
 (non-fatal). Once candidate fidelity is sufficient, switch the runner to
 `--missing-reference fail` to make visual regressions a hard CI gate.

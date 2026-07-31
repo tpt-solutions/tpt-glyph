@@ -66,7 +66,7 @@ escape the process.
 - **Resource limits.** The PostScript interpreter enforces configurable bounds
   on operand-stack size, execution-stack (recursion) depth, emitted draw
   commands (output size), and total instructions executed. See
-  `glyph_ps::ResourceLimits` (`strict()` for untrusted input).
+  `tpt_glyph_ps::ResourceLimits` (`strict()` for untrusted input).
 - **Deterministic rasterizer.** The reference software rasterizer is pure and
   holds no global mutable state, so it is safe under rayon concurrency.
 - **Fuzzing.** `cargo-fuzz` targets exercise the PostScript interpreter and the
