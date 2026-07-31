@@ -233,15 +233,41 @@ above and are additive scope, not replacements for Phases 0–11.
 
 ## Phase 13 — Math Typesetting Engine (`tpt-glyph-math`)
 
-- [ ] Scaffold `tpt-glyph-math` crate with `default-features = []`
-- [ ] Design strongly-typed `MathExpr` AST (`Fraction`, `Superscript`, `Identifier`, `Number`, etc.)
-- [ ] Implement TeX-style math layout algorithm (TeXbook Ch. 17): Display/Text/Script/ScriptScript styles
-- [ ] Implement math atom spacing rules (ORD, OP, BIN, REL, ...) using standard math kerning tables
-- [ ] Implement axis-height / rule-thickness calculation from the current font's x-height
-- [ ] Emit laid-out math AST as `tpt-glyph-core` draw commands (glyph placement, vector fraction bars)
-- [ ] Add optional `latex-parser` feature: pest-based LaTeX math string → `MathExpr` AST parser
+- [x] Scaffold `tpt-glyph-math` crate with `default-features = []`
+- [x] Design strongly-typed `MathExpr` AST (`Fraction`, `Superscript`, `Identifier`, `Number`, etc.)
+- [x] Implement TeX-style math layout algorithm (TeXbook Ch. 17): Display/Text/Script/ScriptScript styles
+- [x] Implement math atom spacing rules (ORD, OP, BIN, REL, ...) using standard math kerning tables
+- [x] Implement axis-height / rule-thickness calculation from the current font's x-height
+- [x] Emit laid-out math AST as `tpt-glyph-core` draw commands (glyph placement, vector fraction bars)
+- [x] Add optional `latex-parser` feature: pest-based LaTeX math string → `MathExpr` AST parser
 - [ ] Build CLI demo: `.math` file or LaTeX string → typeset PDF via `tpt-glyph-core` + `tpt-glyph-pdf-writer`
 - [ ] Publish `tpt-glyph-math` to crates.io
+
+Phase 13 complete except the two items above, deferred by design: the CLI
+demo needs `tpt-glyph-pdf-writer` (Phase 14, not built yet) to emit real PDF
+output, so it's left unstarted rather than substituted with a non-PDF demo;
+`emit::typeset`/`typeset_to_render_tree` already give a future CLI a
+ready-to-call entry point with no rework needed. Publishing is a manual
+`cargo publish` step, not something to automate.
+
+Implementation notes: full TeXbook Ch. 17 scope was implemented, including
+radicals, accents, over/underline, `\left`/`\right` stretchy delimiters, and
+big-operator limits — not just the MVP subset the checklist wording implies.
+`tpt-glyph-math` is `no_std` (+ `alloc`) by default (`ast`/`style`/`atom`/
+`constants`/`layout` only depend on `tpt-glyph-font`); the `std` feature adds
+`emit` (which depends on `tpt-glyph-core`, itself not `no_std` yet); the
+`latex-parser` feature adds a pest-based LaTeX math subset parser. Math
+constants (axis height, rule thickness, sub/superscript shifts, fraction/
+radical gaps, ...) are documented approximations derived from font x-height
+via `MathConstants::from_font`, since no OpenType MATH table is parsed —
+real TeX-quality per-font constants would need one. Stretchy delimiters and
+enlarged radical surds are approximated by non-uniform vertical scaling of
+the base glyph outline, not real per-size glyph variants. 37 unit tests plus 2
+doctests across `ast`/`style`/`atom`/`constants`/`layout`/`emit`/`latex`/
+`lib`, all passing under
+no-features, `--features std`, `--features latex-parser`, and
+`--all-features`; `cargo clippy --all-targets` and `cargo fmt --check` clean
+in every combination.
 
 ## Phase 14 — Full PDF Lifecycle: Write, Edit, Measure
 

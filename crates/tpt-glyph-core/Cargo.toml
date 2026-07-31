@@ -14,10 +14,9 @@ categories = ["graphics", "rendering", "multimedia::images"]
  [dependencies]
 rayon = { workspace = true, optional = true }
 # Declared inline (not via workspace) so `default-features = false` takes effect:
-# serde must be std-free here for the no_std build, and thiserror's derives must
-# not emit `impl std::error::Error` (which references `std`).
+# serde must be std-free here for the no_std build. (`thiserror` is intentionally
+# absent — its derive always emits `impl std::error::Error`, see src/error.rs.)
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
-thiserror = { version = "1.0", default-features = false }
 image = { version = "0.25", optional = true }
 
 # Optional accelerated backends (Phase 6).

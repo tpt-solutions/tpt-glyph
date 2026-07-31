@@ -28,9 +28,11 @@ struct LatexGrammar;
 
 /// Parse a LaTeX math string (e.g. `"\frac{x}{y^2}"`) into a [`MathExpr`].
 pub fn parse(input: &str) -> Result<MathExpr> {
-    let mut pairs =
-        LatexGrammar::parse(Rule::program, input).map_err(|e| MathError::LatexParse(e.to_string()))?;
-    let program = pairs.next().ok_or_else(|| MathError::LatexParse("empty input".to_string()))?;
+    let mut pairs = LatexGrammar::parse(Rule::program, input)
+        .map_err(|e| MathError::LatexParse(e.to_string()))?;
+    let program = pairs
+        .next()
+        .ok_or_else(|| MathError::LatexParse("empty input".to_string()))?;
     let expr_pair = program
         .into_inner()
         .find(|p| p.as_rule() == Rule::expr)
@@ -51,7 +53,9 @@ fn build_expr(pair: Pair<Rule>) -> Result<MathExpr> {
 
 fn build_term(pair: Pair<Rule>) -> Result<MathExpr> {
     let mut inner = pair.into_inner();
-    let base_pair = inner.next().ok_or_else(|| MathError::LatexParse("empty term".to_string()))?;
+    let base_pair = inner
+        .next()
+        .ok_or_else(|| MathError::LatexParse("empty term".to_string()))?;
     let mut base = build_primary(base_pair)?;
 
     let mut pending_sub: Option<MathExpr> = None;
@@ -74,7 +78,11 @@ fn build_term(pair: Pair<Rule>) -> Result<MathExpr> {
                 base = combine(base, pending_sub.take(), pending_sup.take());
                 pending_sub = Some(arg);
             }
-            other => return Err(MathError::LatexParse(alloc::format!("unexpected script rule: {other:?}"))),
+            other => {
+                return Err(MathError::LatexParse(alloc::format!(
+                    "unexpected script rule: {other:?}"
+                )))
+            }
         }
     }
     Ok(combine(base, pending_sub, pending_sup))
@@ -83,11 +91,19 @@ fn build_term(pair: Pair<Rule>) -> Result<MathExpr> {
 fn combine(base: MathExpr, sub: Option<MathExpr>, sup: Option<MathExpr>) -> MathExpr {
     match (sub, sup) {
         (None, None) => base,
-        (Some(sub), None) => MathExpr::Subscript { base: Box::new(base), sub: Box::new(sub) },
-        (None, Some(sup)) => MathExpr::Superscript { base: Box::new(base), sup: Box::new(sup) },
-        (Some(sub), Some(sup)) => {
-            MathExpr::SubSup { base: Box::new(base), sub: Box::new(sub), sup: Box::new(sup) }
-        }
+        (Some(sub), None) => MathExpr::Subscript {
+            base: Box::new(base),
+            sub: Box::new(sub),
+        },
+        (None, Some(sup)) => MathExpr::Superscript {
+            base: Box::new(base),
+            sup: Box::new(sup),
+        },
+        (Some(sub), Some(sup)) => MathExpr::SubSup {
+            base: Box::new(base),
+            sub: Box::new(sub),
+            sup: Box::new(sup),
+        },
     }
 }
 
@@ -107,19 +123,27 @@ fn build_primary(pair: Pair<Rule>) -> Result<MathExpr> {
             "\\," => MathSpace::Thin,
             "\\;" => MathSpace::Thick,
             "\\!" => MathSpace::NegativeThin,
-            other => return Err(MathError::LatexParse(alloc::format!("unknown spacing command: {other}"))),
+            other => {
+                return Err(MathError::LatexParse(alloc::format!(
+                    "unknown spacing command: {other}"
+                )))
+            }
         })),
         Rule::command => build_command(pair),
         Rule::number => Ok(MathExpr::Number(pair.as_str().to_string())),
         Rule::identifier => Ok(MathExpr::Identifier(pair.as_str().to_string())),
         Rule::symbol => Ok(build_symbol(pair.as_str())),
-        other => Err(MathError::LatexParse(alloc::format!("unexpected token: {other:?}"))),
+        other => Err(MathError::LatexParse(alloc::format!(
+            "unexpected token: {other:?}"
+        ))),
     }
 }
 
 fn build_frac(pair: Pair<Rule>) -> Result<MathExpr> {
     let mut inner = pair.into_inner();
-    let num = inner.next().ok_or_else(|| MathError::LatexParse("\\frac missing numerator".to_string()))?;
+    let num = inner
+        .next()
+        .ok_or_else(|| MathError::LatexParse("\\frac missing numerator".to_string()))?;
     let den = inner
         .next()
         .ok_or_else(|| MathError::LatexParse("\\frac missing denominator".to_string()))?;
@@ -139,7 +163,10 @@ fn build_sqrt(pair: Pair<Rule>) -> Result<MathExpr> {
         Some(idx_pair) => Some(Box::new(build_expr(idx_pair)?)),
         None => None,
     };
-    Ok(MathExpr::Radical { index, radicand: Box::new(build_primary(radicand_pair)?) })
+    Ok(MathExpr::Radical {
+        index,
+        radicand: Box::new(build_primary(radicand_pair)?),
+    })
 }
 
 fn build_left_right(pair: Pair<Rule>) -> Result<MathExpr> {
@@ -147,7 +174,9 @@ fn build_left_right(pair: Pair<Rule>) -> Result<MathExpr> {
     let left = inner
         .next()
         .ok_or_else(|| MathError::LatexParse("\\left missing delimiter".to_string()))?;
-    let body = inner.next().ok_or_else(|| MathError::LatexParse("\\left missing body".to_string()))?;
+    let body = inner
+        .next()
+        .ok_or_else(|| MathError::LatexParse("\\left missing body".to_string()))?;
     let right = inner
         .next()
         .ok_or_else(|| MathError::LatexParse("\\right missing delimiter".to_string()))?;
@@ -178,7 +207,9 @@ fn build_command(pair: Pair<Rule>) -> Result<MathExpr> {
     if let Some(expr) = macro_operator(name) {
         return Ok(expr);
     }
-    Err(MathError::LatexParse(alloc::format!("unknown command: \\{name}")))
+    Err(MathError::LatexParse(alloc::format!(
+        "unknown command: \\{name}"
+    )))
 }
 
 fn build_symbol(s: &str) -> MathExpr {
@@ -205,7 +236,11 @@ fn macro_operator(name: &str) -> Option<MathExpr> {
         "min" => (None, Limits::Limits),
         _ => return None,
     };
-    Some(MathExpr::Operator { name: name.to_string(), ch, limits })
+    Some(MathExpr::Operator {
+        name: name.to_string(),
+        ch,
+        limits,
+    })
 }
 
 /// Common macro names mapped to a Unicode symbol and its TeX atom class.
@@ -319,7 +354,10 @@ mod tests {
     fn parses_sqrt_with_index() {
         let expr = parse("\\sqrt[3]{x}").unwrap();
         match expr {
-            MathExpr::Radical { index: Some(index), radicand } => {
+            MathExpr::Radical {
+                index: Some(index),
+                radicand,
+            } => {
                 assert_eq!(*index, MathExpr::Number("3".to_string()));
                 assert_eq!(*radicand, MathExpr::Identifier("x".to_string()));
             }
@@ -331,21 +369,35 @@ mod tests {
     fn parses_left_right_delimiters() {
         let expr = parse("\\left(x\\right)").unwrap();
         match expr {
-            MathExpr::DelimiterPair { left: Some('('), right: Some(')'), .. } => {}
+            MathExpr::DelimiterPair {
+                left: Some('('),
+                right: Some(')'),
+                ..
+            } => {}
             other => panic!("expected DelimiterPair, got {other:?}"),
         }
     }
 
     #[test]
     fn parses_greek_letter_macro() {
-        assert_eq!(parse("\\alpha").unwrap(), MathExpr::Symbol { ch: '\u{3B1}', class: AtomClass::Ord });
+        assert_eq!(
+            parse("\\alpha").unwrap(),
+            MathExpr::Symbol {
+                ch: '\u{3B1}',
+                class: AtomClass::Ord
+            }
+        );
     }
 
     #[test]
     fn parses_sum_operator_with_limits() {
         let expr = parse("\\sum").unwrap();
         match expr {
-            MathExpr::Operator { name, limits: Limits::Auto, .. } => assert_eq!(name, "sum"),
+            MathExpr::Operator {
+                name,
+                limits: Limits::Auto,
+                ..
+            } => assert_eq!(name, "sum"),
             other => panic!("expected Operator, got {other:?}"),
         }
     }

@@ -3,40 +3,67 @@
 // TPT Glyph — tpt-glyph-core / error
 //
 // Crate-wide error type and `Result` alias.
+//
+// Implemented by hand (rather than via `thiserror`) so the crate stays `#![no_std]`
+// compatible: `thiserror`'s derive unconditionally emits `impl std::error::Error`,
+// which cannot compile in a no_std build. The `std::error::Error` impl and the
+// `Io` variant are therefore gated behind the `std` feature.
 
 use alloc::string::String;
-use thiserror::Error;
+use core::fmt;
 
 /// Errors produced by the tpt-glyph-core engine.
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum GlyphError {
-    #[error("invalid dimensions: {width}x{height}")]
     InvalidDimensions { width: u32, height: u32 },
-
-    #[error("page index out of range: {index} (document has {count} pages)")]
     PageOutOfRange { index: usize, count: usize },
-
-    #[error("unsupported feature: {0}")]
     Unsupported(&'static str),
-
-    #[error("graphics state stack underflow")]
     StateStackUnderflow,
-
-    #[error("operand stack underflow")]
     OperandStackUnderflow,
-
-    #[error("unknown operator: {0}")]
     UnknownOperator(String),
-
-    #[error("parse error: {0}")]
     Parse(String),
-
-    #[error("resource limit exceeded: {0}")]
     ResourceLimit(String),
 
     #[cfg(feature = "std")]
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Io(std::io::Error),
+}
+
+impl fmt::Display for GlyphError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GlyphError::InvalidDimensions { width, height } => {
+                write!(f, "invalid dimensions: {width}x{height}")
+            }
+            GlyphError::PageOutOfRange { index, count } => {
+                write!(f, "page index out of range: {index} (document has {count} pages)")
+            }
+            GlyphError::Unsupported(msg) => write!(f, "unsupported feature: {msg}"),
+            GlyphError::StateStackUnderflow => write!(f, "graphics state stack underflow"),
+            GlyphError::OperandStackUnderflow => write!(f, "operand stack underflow"),
+            GlyphError::UnknownOperator(op) => write!(f, "unknown operator: {op}"),
+            GlyphError::Parse(msg) => write!(f, "parse error: {msg}"),
+            GlyphError::ResourceLimit(msg) => write!(f, "resource limit exceeded: {msg}"),
+            #[cfg(feature = "std")]
+            GlyphError::Io(err) => write!(f, "{err}"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for GlyphError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            GlyphError::Io(err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<std::io::Error> for GlyphError {
+    fn from(err: std::io::Error) -> Self {
+        GlyphError::Io(err)
+    }
 }
 
 /// Convenience `Result` alias for tpt-glyph-core operations.
