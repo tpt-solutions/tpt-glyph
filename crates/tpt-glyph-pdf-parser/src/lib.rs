@@ -15,8 +15,11 @@ use pdf::content::{Color, Matrix as PdfMatrix, TextDrawAdjusted as PdfTextDrawAd
 use pdf::content::{LineCap as PdfLineCap, LineJoin as PdfLineJoin, Winding};
 use pdf::error::PdfError;
 use pdf::font::{FontData, FontType};
-use pdf::object::{ColorSpace as PdfColorSpace, Object, Rectangle};
-use pdf::primitive::{Name, Primitive};
+use pdf::object::{
+    Annot as PdfAnnot, ColorSpace as PdfColorSpace, Counter, MaybeRef, Object, PageLabel,
+    Rectangle,
+};
+use pdf::primitive::{Dictionary, Name, Primitive};
 
 /// Concrete file type produced by `FileOptions::uncached().load(data)`.
 type PdfFile<'a> =
@@ -38,15 +41,17 @@ pub type Result<T> = core::result::Result<T, ParseError>;
 /// Parse PDF bytes into the canonical immutable IR.
 pub fn parse_bytes(data: &[u8]) -> Result<ir::Document> {
     let file = pdf::file::FileOptions::uncached().load(data)?;
+    let labels = collect_page_labels(&file);
     let mut pages = Vec::new();
     for idx in 0..file.num_pages() {
-        let page = convert_page(&file, idx)?;
+        let page = convert_page(&file, idx, &labels)?;
         pages.push(page);
     }
 
-    let trailer = convert_trailer(&file);
+    let objects = scan_objects(&file);
+    let trailer = convert_trailer(&file, &objects);
     let xref = ir::XRef {
-        entries: Vec::new(),
+        entries: compute_xref_entries(data, &objects),
     };
     let version = file.version().unwrap_or_else(|_| "1.7".into());
 
@@ -55,7 +60,7 @@ pub fn parse_bytes(data: &[u8]) -> Result<ir::Document> {
         pages,
         xref,
         trailer,
-        objects: Vec::new(),
+        objects,
     })
 }
 
@@ -69,7 +74,7 @@ pub fn parse_path(path: impl AsRef<std::path::Path>) -> Result<ir::Document> {
 // Trailer
 // ---------------------------------------------------------------------------
 
-fn convert_trailer(file: &PdfFile<'_>) -> ir::Trailer {
+fn convert_trailer(file: &PdfFile<'_>, objects: &[(u32, u16, ir::PdfValue)]) -> ir::Trailer {
     let root_id = file.trailer.root.get_ref().get_inner().id;
     let id = (file.trailer.id.len() >= 2).then(|| {
         [
@@ -79,17 +84,164 @@ fn convert_trailer(file: &PdfFile<'_>) -> ir::Trailer {
     });
     ir::Trailer {
         root: root_id as u32,
-        info: None,
+        info: find_info_object_number(file, objects),
         id,
-        encrypt: None,
+        encrypt: file.trailer.encrypt_dict.as_ref().map(|rc| {
+            let inner = rc.get_ref().get_inner();
+            ir::PdfValue::Reference(inner.id as u32, inner.gen as u16)
+        }),
     }
+}
+
+/// The typed `Trailer` discards the /Info reference, so recover the object
+/// number by matching the parsed `InfoDict` fields against the scanned
+/// object inventory. Falls back to `None` for documents without a /Info dict
+/// or where the match is ambiguous.
+fn find_info_object_number(
+    file: &PdfFile<'_>,
+    objects: &[(u32, u16, ir::PdfValue)],
+) -> Option<u32> {
+    let info = file.trailer.info_dict.as_ref()?;
+    let mut signature: Vec<(&str, Vec<u8>)> = Vec::new();
+    macro_rules! push {
+        ($key:literal, $field:ident) => {
+            if let Some(v) = &info.$field {
+                signature.push(($key, v.as_bytes().to_vec()));
+            }
+        };
+    }
+    push!("Title", title);
+    push!("Author", author);
+    push!("Subject", subject);
+    push!("Keywords", keywords);
+    push!("Creator", creator);
+    push!("Producer", producer);
+    if signature.is_empty() {
+        return None;
+    }
+    objects.iter().find_map(|&(num, _, ref value)| {
+        let ir::PdfValue::Dict(entries) = value else {
+            return None;
+        };
+        let matches = signature.iter().all(|(key, expected)| {
+            entries.iter().any(|(entry_key, entry_value)| {
+                entry_key == key
+                    && matches!(entry_value, ir::PdfValue::String(s) if s == expected)
+            })
+        });
+        matches.then_some(num)
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Object inventory + xref reconstruction
+// ---------------------------------------------------------------------------
+
+/// Enumerate all indirect objects reachable in the file body. Objects stored
+/// inside compressed object streams are not surfaced by the `pdf` crate's
+/// scan pass; for those files the `objects` list is best-effort (still
+/// complete for classic-xref documents).
+fn scan_objects(file: &PdfFile<'_>) -> Vec<(u32, u16, ir::PdfValue)> {
+    let resolver = file.resolver();
+    let mut objects = Vec::new();
+    for item in file.scan() {
+        if let Ok(pdf::file::ScanItem::Object(plain_ref, primitive)) = item {
+            objects.push((
+                plain_ref.id as u32,
+                plain_ref.gen as u16,
+                primitive_to_ir_value(primitive, &resolver),
+            ));
+        }
+    }
+    objects
+}
+
+/// The xref table is indexed by object number; `entries[0]` is the mandatory
+/// free-head entry.
+fn compute_xref_entries(data: &[u8], objects: &[(u32, u16, ir::PdfValue)]) -> Vec<ir::XRefEntry> {
+    let max_num = objects.iter().map(|&(n, _, _)| n).max().unwrap_or(0);
+    let mut entries = vec![ir::XRefEntry::new(0, 65535, false); max_num as usize + 1];
+    for (&(num, gen, _), offset) in objects.iter().zip(compute_object_offsets(data, objects)) {
+        if let Some(entry) = entries.get_mut(num as usize) {
+            *entry = ir::XRefEntry::new(offset, gen, true);
+        }
+    }
+    entries
+}
+
+/// Best-effort byte offsets for a list of `(object_number, generation)`
+/// pairs, found by scanning the raw body for each `N G obj` header in file
+/// order. Correct for classic-xref documents; incremental-update files may
+/// resolve to the first (superseded) occurrence of a redefined object.
+fn compute_object_offsets(data: &[u8], objects: &[(u32, u16, ir::PdfValue)]) -> Vec<u64> {
+    let mut offsets = Vec::with_capacity(objects.len());
+    let mut pos = 0usize;
+    for &(id, gen, _) in objects {
+        let marker = format!("\n{id} {gen} obj");
+        let marker = marker.as_bytes();
+        let mut found = None;
+        let mut p = pos;
+        while p < data.len() {
+            if let Some(abs) = find_bytes(data, marker, p) {
+                // xref offsets point at the `N G obj` header itself.
+                found = Some(abs + 1);
+                pos = abs + marker.len();
+                break;
+            }
+            match data[p..].iter().position(|&b| b == b'\n') {
+                Some(nl) => p += nl + 1,
+                None => break,
+            }
+        }
+        offsets.push(found.unwrap_or(0) as u64);
+    }
+    offsets
+}
+
+fn find_bytes(haystack: &[u8], needle: &[u8], from: usize) -> Option<usize> {
+    if needle.is_empty() || haystack.len() < from + needle.len() {
+        return None;
+    }
+    haystack[from..]
+        .windows(needle.len())
+        .position(|w| w == needle)
+        .map(|i| from + i)
+}
+
+/// Convert a `pdf` crate primitive into the IR's lossless `PdfValue`.
+fn primitive_to_ir_value(p: Primitive, resolver: &impl pdf::object::Resolve) -> ir::PdfValue {
+    match p {
+        Primitive::Null => ir::PdfValue::Null,
+        Primitive::Integer(i) => ir::PdfValue::Integer(i as i64),
+        Primitive::Number(f) => ir::PdfValue::Real(f as f64),
+        Primitive::Boolean(b) => ir::PdfValue::Boolean(b),
+        Primitive::String(s) => ir::PdfValue::String(s.as_bytes().to_vec()),
+        Primitive::Stream(stream) => ir::PdfValue::Stream(ir::PdfStream {
+            dict: dict_to_ir(&stream.info, resolver),
+            data: stream.raw_data(resolver).unwrap_or_default().to_vec(),
+        }),
+        Primitive::Dictionary(d) => ir::PdfValue::Dict(dict_to_ir(&d, resolver)),
+        Primitive::Array(a) => ir::PdfValue::Array(
+            a.into_iter()
+                .map(|p| primitive_to_ir_value(p, resolver))
+                .collect(),
+        ),
+        Primitive::Reference(r) => ir::PdfValue::Reference(r.id as u32, r.gen as u16),
+        Primitive::Name(n) => ir::PdfValue::Name(name_str(&Name(n))),
+    }
+}
+
+fn dict_to_ir(d: &Dictionary, resolver: &impl pdf::object::Resolve) -> ir::PdfDict {
+    d.iter()
+        .map(|(k, v)| (name_str(k), primitive_to_ir_value(v.clone(), resolver)))
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
 // Page tree
 // ---------------------------------------------------------------------------
 
-fn convert_page(file: &PdfFile<'_>, index: u32) -> Result<Page> {
+fn convert_page(file: &PdfFile<'_>, index: u32, labels: &[PageLabelRange]) -> Result<Page> {
     let resolver = file.resolver();
     let page_rc = file.get_page(index)?;
     let page = &*page_rc;
@@ -125,7 +277,7 @@ fn convert_page(file: &PdfFile<'_>, index: u32) -> Result<Page> {
 
     Ok(Page {
         index,
-        label: None,
+        label: page_label(index, labels),
         media_box,
         crop_box,
         bleed_box,
@@ -134,9 +286,149 @@ fn convert_page(file: &PdfFile<'_>, index: u32) -> Result<Page> {
         rotate: page.rotate,
         resources,
         contents,
-        annotations: Vec::new(),
+        annotations: convert_annotations(page, &resolver),
         thumb: None,
         struct_parents: None,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Page labels
+// ---------------------------------------------------------------------------
+
+/// One range of the document's /PageLabels number tree.
+struct PageLabelRange {
+    start: u32,
+    prefix: String,
+    style: Option<Counter>,
+    counter_start: u32,
+}
+
+/// Flatten the catalog's /PageLabels tree into sorted, non-overlapping ranges
+/// (each range applies from its start index until the next range's start).
+fn collect_page_labels(file: &PdfFile<'_>) -> Vec<PageLabelRange> {
+    let mut ranges = Vec::new();
+    if let Some(tree) = &file.trailer.root.page_labels {
+        let resolver = file.resolver();
+        let _ = tree.walk(&resolver, &mut |idx, label: &PageLabel| {
+            ranges.push(PageLabelRange {
+                start: idx.max(0) as u32,
+                prefix: label
+                    .prefix
+                    .as_ref()
+                    .map(|s| String::from_utf8_lossy(s.as_bytes()).to_string())
+                    .unwrap_or_default(),
+                style: label.style.clone(),
+                counter_start: label.start.unwrap_or(1).max(1) as u32,
+            });
+        });
+    }
+    ranges.sort_by_key(|r| r.start);
+    ranges
+}
+
+fn page_label(index: u32, ranges: &[PageLabelRange]) -> Option<String> {
+    let range = ranges.iter().rev().find(|r| r.start <= index)?;
+    let value = index as u64 - range.start as u64 + range.counter_start as u64;
+    let numbered = match range.style {
+        None => String::new(),
+        Some(Counter::Arabic) => value.to_string(),
+        // Note: the `pdf` crate's enum variant names are case-inverted
+        // relative to the PDF spec. A file `/S /r` (spec: lowercase roman)
+        // parses to `Counter::RomanUpper`, so we render lower/upper here to
+        // match what the spec actually means.
+        Some(Counter::RomanUpper) => to_roman(value),
+        Some(Counter::RomanLower) => to_roman(value).to_uppercase(),
+        Some(Counter::AlphaUpper) => to_alpha(value),
+        Some(Counter::AlphaLower) => to_alpha(value).to_uppercase(),
+    };
+    Some(format!("{}{}", range.prefix, numbered))
+}
+
+fn to_roman(mut n: u64) -> String {
+    const TABLE: [(u64, &str); 13] = [
+        (1000, "M"),
+        (900, "CM"),
+        (500, "D"),
+        (400, "CD"),
+        (100, "C"),
+        (90, "XC"),
+        (50, "L"),
+        (40, "XL"),
+        (10, "X"),
+        (9, "IX"),
+        (5, "V"),
+        (4, "IV"),
+        (1, "I"),
+    ];
+    let mut out = String::new();
+    for &(value, numeral) in &TABLE {
+        while n >= value {
+            out.push_str(numeral);
+            n -= value;
+        }
+    }
+    out
+}
+
+fn to_alpha(mut n: u64) -> String {
+    let mut out = String::new();
+    while n > 0 {
+        n -= 1;
+        out.insert(0, (b'a' + (n % 26) as u8) as char);
+        n /= 26;
+    }
+    out
+}
+
+// ---------------------------------------------------------------------------
+// Annotations
+// ---------------------------------------------------------------------------
+
+fn convert_annotations(
+    page: &pdf::object::Page,
+    resolver: &impl pdf::object::Resolve,
+) -> Vec<ir::Annotation> {
+    match page.annotations.load(resolver) {
+        Ok(annots) => annots
+            .data()
+            .iter()
+            .filter_map(|a| convert_annotation(a))
+            .collect(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn convert_annotation(a: &MaybeRef<PdfAnnot>) -> Option<ir::Annotation> {
+    let ann = a.data();
+    let rect = ann.rect.map(|r| Rect::new(r.left as f64, r.bottom as f64, r.right as f64, r.top as f64));
+    let subtype = name_str(&ann.subtype);
+    let contents = ann
+        .contents
+        .as_ref()
+        .map(|s| String::from_utf8_lossy(s.as_bytes()).to_string());
+    let rect_value = rect.map(|r| {
+        ir::PdfValue::Array(vec![
+            ir::PdfValue::Real(r.left),
+            ir::PdfValue::Real(r.bottom),
+            ir::PdfValue::Real(r.right),
+            ir::PdfValue::Real(r.top),
+        ])
+    });
+
+    let mut value: ir::PdfDict = vec![("Subtype".into(), ir::PdfValue::Name(subtype.clone()))];
+    if let Some(r) = rect_value {
+        value.push(("Rect".into(), r));
+    }
+    if let Some(c) = &ann.contents {
+        value.push(("Contents".into(), ir::PdfValue::String(c.as_bytes().to_vec())));
+    }
+
+    Some(ir::Annotation {
+        subtype,
+        rect: rect.unwrap_or_else(|| Rect::new(0.0, 0.0, 0.0, 0.0)),
+        contents,
+        value: ir::PdfValue::Dict(value),
     })
 }
 
@@ -640,5 +932,103 @@ mod tests {
     fn trailer_root_is_present() {
         let doc = parse_bytes(&sample_pdf()).unwrap();
         assert!(doc.trailer.root > 0);
+    }
+
+    #[test]
+    fn indirect_objects_are_populated() {
+        let doc = parse_bytes(&sample_pdf()).unwrap();
+        // The sample has 5 objects (catalog, pages, page, contents, font).
+        assert_eq!(doc.objects.len(), 5);
+        assert!(doc.objects.iter().any(|&(num, gen, ref v)| {
+            num == 4
+                && gen == 0
+                && matches!(v, ir::PdfValue::Stream(ref s) if !s.data.is_empty())
+        }));
+        assert!(doc.objects.iter().any(|&(num, _, ref v)| {
+            num == 1 && matches!(v, ir::PdfValue::Dict(_))
+        }));
+    }
+
+    #[test]
+    fn xref_entries_have_real_offsets() {
+        let data = sample_pdf();
+        let doc = parse_bytes(&data).unwrap();
+        // entries are indexed by object number (entry 0 = free head).
+        assert!(!doc.xref.entries.is_empty());
+        assert!(!doc.xref.entries[0].in_use);
+        for (num, entry) in doc.xref.entries.iter().enumerate().skip(1) {
+            if entry.in_use {
+                let offset = entry.offset as usize;
+                let header = &data[offset..];
+                assert!(header.starts_with(format!("{num} ").as_bytes()));
+            }
+        }
+    }
+
+    #[test]
+    fn trailer_info_and_encrypt_populated() {
+        let stream = "0.2 0.4 0.8 rg\n";
+        let objects: Vec<String> = vec![
+            "<< /Type /Catalog /Pages 2 0 R >>".into(),
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>".into(),
+            format!("<< /Length {} >>\nstream\n{}endstream", stream.len(), stream),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+            "<< /Title (Report) /Author (TPT) >>".into(),
+        ];
+        let data = build_pdf(&objects, "<< /Root 1 0 R /Size 7 /Info 6 0 R >>");
+        let doc = parse_bytes(&data).unwrap();
+        assert_eq!(doc.trailer.info, Some(6));
+        assert!(doc.trailer.encrypt.is_none());
+    }
+
+    #[test]
+    fn annotations_and_labels_populated() {
+        let stream = "0.2 0.4 0.8 rg\n";
+        let objects: Vec<String> = vec![
+            "<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [ 0 << /S /r >> 3 << /S /D /P (p) >> ] >> >>"
+                .into(),
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>".into(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 5 0 R /Annots [7 0 R] >>"
+                .into(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 5 0 R >>".into(),
+            format!("<< /Length {} >>\nstream\n{}endstream", stream.len(), stream),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+            "<< /Subtype /Text /Rect [10 10 20 20] /Contents (hello) >>".into(),
+        ];
+        let data = build_pdf(&objects, "<< /Root 1 0 R /Size 8 >>");
+        let doc = parse_bytes(&data).unwrap();
+        assert_eq!(doc.page_count(), 2);
+        assert_eq!(doc.page(0).unwrap().label.as_deref(), Some("i"));
+        assert_eq!(doc.page(1).unwrap().label.as_deref(), Some("p1"));
+        let annots = &doc.page(0).unwrap().annotations;
+        assert_eq!(annots.len(), 1);
+        assert_eq!(annots[0].subtype, "Text");
+        assert_eq!(annots[0].contents.as_deref(), Some("hello"));
+    }
+
+    /// Serialize a body of objects plus a trailer into a classic-xref PDF.
+    fn build_pdf(objects: &[String], trailer: &str) -> Vec<u8> {
+        let mut body = b"%PDF-1.4\n".to_vec();
+        let mut offsets: Vec<usize> = Vec::new();
+        for (i, obj) in objects.iter().enumerate() {
+            let num = i + 1;
+            offsets.push(body.len());
+            body.extend_from_slice(format!("{num} 0 obj\n").as_bytes());
+            body.extend_from_slice(obj.as_bytes());
+            body.extend_from_slice(b"\nendobj\n");
+        }
+        let xref_start = body.len();
+        let mut xref = String::from("xref\n");
+        xref.push_str(&format!("0 {}\n", objects.len() + 1));
+        xref.push_str("0000000000 65535 f \n");
+        for off in &offsets {
+            xref.push_str(&format!("{off:010} 00000 n \n"));
+        }
+        body.extend_from_slice(xref.as_bytes());
+        body.extend_from_slice(
+            format!("trailer\n{trailer}\nstartxref\n{}\n%%EOF", xref_start).as_bytes(),
+        );
+        body
     }
 }

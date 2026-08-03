@@ -18,6 +18,10 @@ rayon = { workspace = true, optional = true }
 # absent — its derive always emits `impl std::error::Error`, see src/error.rs.)
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 image = { version = "0.25", optional = true }
+# `std`-only f64 methods (round/sqrt/sin/cos/...) under `no_std`. In `std`
+# builds the crate's own `math` shim delegates to the inherent methods and
+# this dependency is compiled but unused.
+libm = "0.2"
 
 # Optional accelerated backends (Phase 6).
 raqote = { workspace = true, optional = true }

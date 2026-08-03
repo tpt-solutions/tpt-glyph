@@ -8,6 +8,8 @@
 // backend.
 
 use crate::graphics_state::RgbColor;
+#[cfg(not(feature = "std"))]
+use crate::math::F64MathExt;
 use alloc::vec::Vec;
 
 /// RGBA pixel, 8 bits per channel, stored little-endian (R, G, B, A).

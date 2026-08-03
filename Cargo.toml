@@ -11,6 +11,7 @@ members = [
     "crates/tpt-glyph-pdf-ir",
     "crates/tpt-glyph-math",
     "crates/tpt-glyph-pdf-parser",
+    "crates/tpt-glyph-pdf-writer",
     "tools/tpt-glyph-diff",
     "tools/tpt-glyph-fixtures",
 ]
@@ -32,6 +33,7 @@ tpt-glyph-ps = { path = "crates/tpt-glyph-ps", version = "0.1.0" }
 tpt-glyph-pdf = { path = "crates/tpt-glyph-pdf", version = "0.1.0" }
 tpt-glyph-pdf-ir = { path = "crates/tpt-glyph-pdf-ir", version = "0.1.0" }
 tpt-glyph-pdf-parser = { path = "crates/tpt-glyph-pdf-parser", version = "0.1.0" }
+tpt-glyph-pdf-writer = { path = "crates/tpt-glyph-pdf-writer", version = "0.1.0" }
 tpt-glyph-font = { path = "crates/tpt-glyph-font", version = "0.1.0" }
 
 # Rendering backends

@@ -2697,6 +2697,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "image",
+ "libm",
  "raqote",
  "rayon",
  "serde",
@@ -2789,6 +2790,14 @@ dependencies = [
  "pdf",
  "thiserror 1.0.69",
  "tpt-glyph-pdf-ir",
+]
+
+[[package]]
+name = "tpt-glyph-pdf-writer"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "tpt-glyph-pdf-parser",
 ]
 
 [[package]]

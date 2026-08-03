@@ -1,0 +1,20 @@
+[package]
+name = "tpt-glyph-pdf-writer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Low-level PDF object serialization: objects, streams, XRef tables, and standard + compressed object streams."
+keywords = ["pdf", "writer", "serialization", "xref", "objects"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+# Default backend is miniz_oxide (pure Rust), so the crate stays buildable
+# without a C toolchain.
+flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] }
+
+[dev-dependencies]
+tpt-glyph-pdf-parser = { path = "../tpt-glyph-pdf-parser", version = "0.1.0" }

@@ -16,6 +16,8 @@ use crate::canvas::{Canvas, Pixel};
 use crate::error::Result;
 use crate::geometry::{CubicBezier, Path, Point, Transform};
 use crate::graphics_state::{LineCap, LineJoin, RgbColor};
+#[cfg(not(feature = "std"))]
+use crate::math::F64MathExt;
 use crate::render::{DrawCommand, RenderTree};
 use alloc::vec::Vec;
 

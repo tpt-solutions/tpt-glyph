@@ -68,6 +68,7 @@ pub mod document;
 pub mod error;
 pub mod geometry;
 pub mod graphics_state;
+pub mod math;
 pub mod raster;
 pub mod render;
 
