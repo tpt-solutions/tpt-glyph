@@ -8,7 +8,7 @@
 // metrics (advance widths, ascent/descent). This crate is deliberately
 // rendering-agnostic — it walks content-stream operators directly into
 // geometry, without rasterizing — so it stays usable by measurement tools
-// (`tools/tpt-glyph-measure`) that only need PDF-unit geometry, not pixels.
+// (`tools/out-glyph-measure`) that only need PDF-unit geometry, not pixels.
 
 //! # tpt-glyph-pdf-measure
 //!

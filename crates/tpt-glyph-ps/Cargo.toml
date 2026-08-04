@@ -8,6 +8,9 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "PostScript interpreter for TPT Glyph: tokenizer, parser, stacks, and KG-driven operator dispatch."
+readme = "README.md"
+keywords = ["postscript", "interpreter", "pdf", "rendering", "parser"]
+categories = ["graphics", "parsing"]
 
 [dependencies]
 tpt-glyph-core = { workspace = true }

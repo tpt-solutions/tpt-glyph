@@ -53,11 +53,11 @@ simultaneously across CPU cores — safely, by construction.
 | `crates/tpt-glyph-core` | Engine library: immutable `GraphicsState`, geometry, canvas, document model, reference + raqote rasterizers, backend selection. |
 | `crates/tpt-glyph-cli` | `tpt-glyph` binary — render/convert commands. |
 | `crates/tpt-glyph-kg`  | Rendering Pipeline Knowledge Graph (operators → graphics state → pixel buffer). |
-| `crates/tpt-glyph-diag`| AI-assisted diagnostic tool consuming the knowledge graph. |
+| `crates/out-glyph-diag`| AI-assisted diagnostic tool consuming the knowledge graph. |
 | `crates/tpt-glyph-ps`  | PostScript interpreter (tokenizer, parser, stacks, KG-driven dispatch). |
 | `crates/tpt-glyph-pdf` | PDF parsing & rendering (page tree, content streams, fonts/XObjects). |
-| `tools/tpt-glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript reference). |
-| `tools/tpt-glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
+| `tools/out-glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript reference). |
+| `tools/out-glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
 
 ### Knowledge Graph
 
@@ -160,3 +160,4 @@ Dual-licensed under either of:
 at your option.
 
 Copyright © TPT Solutions.
+

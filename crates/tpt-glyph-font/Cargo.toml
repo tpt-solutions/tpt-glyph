@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Font metric parsing and glyph outlining for TTF/OTF via ttf-parser."
+readme = "README.md"
 keywords = ["font", "ttf", "otf", "typography", "glyph"]
 categories = ["text-processing", "graphics"]
 

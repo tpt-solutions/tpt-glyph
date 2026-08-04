@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tools / tpt-glyph-fixtures
+// TPT Glyph — tools / out-glyph-fixtures
 //
 // Generates synthetic multi-page PDF fixtures used by the Phase 7 concurrent
 // rendering stress tests. The PDFs are hand-assembled (no writer dependency) so

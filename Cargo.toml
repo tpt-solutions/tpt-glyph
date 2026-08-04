@@ -4,7 +4,7 @@ members = [
     "crates/tpt-glyph-core",
     "crates/tpt-glyph-cli",
     "crates/tpt-glyph-kg",
-    "crates/tpt-glyph-diag",
+    "crates/out-glyph-diag",
     "crates/tpt-glyph-ps",
     "crates/tpt-glyph-pdf",
     "crates/tpt-glyph-font",
@@ -15,9 +15,9 @@ members = [
     "crates/tpt-glyph-pdf-measure",
     "crates/tpt-glyph-pdf-editor",
     "crates/tpt-glyph-typeset",
-    "tools/tpt-glyph-diff",
-    "tools/tpt-glyph-fixtures",
-    "tools/tpt-glyph-measure",
+    "tools/out-glyph-diff",
+    "tools/out-glyph-fixtures",
+    "tools/out-glyph-measure",
 ]
 
 [workspace.package]

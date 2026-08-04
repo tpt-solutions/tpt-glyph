@@ -8,6 +8,9 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Rendering Pipeline Knowledge Graph for TPT Glyph: operators, graphics state, and pixel-buffer effects."
+readme = "README.md"
+keywords = ["knowledge-graph", "pdf", "postscript", "rendering", "operators"]
+categories = ["graphics", "data-structures"]
 
 [dependencies]
 serde.workspace = true

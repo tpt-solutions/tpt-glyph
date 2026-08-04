@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-diag
+// TPT Glyph — out-glyph-diag
 //
 // AI-assisted diagnostic tooling. Consumes the knowledge graph to report
 // operator coverage, validate the interpreter dispatch table for consistency,
@@ -18,7 +18,7 @@ mod lint;
 
 #[derive(Parser)]
 #[command(
-    name = "tpt-glyph-diag",
+    name = "out-glyph-diag",
     version,
     about = "TPT Glyph diagnostic tool (knowledge-graph driven)"
 )]
@@ -43,9 +43,9 @@ enum Command {
     Validate,
     /// Load an exported knowledge graph JSON and summarize it.
     Inspect { graph: std::path::PathBuf },
-    /// Analyze a tpt-glyph-diff report (Phase 1) and suggest likely causes.
+    /// Analyze a out-glyph-diff report (Phase 1) and suggest likely causes.
     Diff {
-        /// Path to a diff-report.json produced by tpt-glyph-diff.
+        /// Path to a diff-report.json produced by out-glyph-diff.
         report: std::path::PathBuf,
     },
     /// Parse a PDF and flag corrupted or non-standard structure (Phase 14).

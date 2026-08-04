@@ -1,5 +1,5 @@
 [package]
-name = "tpt-glyph-diff"
+name = "out-glyph-diff"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,9 +8,13 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Pixel-diff comparison harness: TPT Glyph output vs Ghostscript reference, with pass/fail thresholds."
+publish = false
+readme = "README.md"
+keywords = ["pixel-diff", "image-comparison", "testing", "pdf", "postscript"]
+categories = ["development-tools", "command-line-utilities"]
 
 [[bin]]
-name = "tpt-glyph-diff"
+name = "out-glyph-diff"
 path = "src/main.rs"
 
 [dependencies]

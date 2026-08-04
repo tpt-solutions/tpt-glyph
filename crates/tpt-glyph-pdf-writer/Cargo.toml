@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Low-level PDF object serialization: objects, streams, XRef tables, and standard + compressed object streams."
+readme = "README.md"
 keywords = ["pdf", "writer", "serialization", "xref", "objects"]
 categories = ["text-processing", "graphics"]
 

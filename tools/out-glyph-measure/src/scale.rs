@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-measure / scale
+// TPT Glyph — out-glyph-measure / scale
 //
 // Drawing-scale parsing and application. A `ScaleSpec` reduces to a single
 // dimensionless factor — real-world length per drawn length, in the *same*

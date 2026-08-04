@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Canonical immutable intermediate representation of a PDF document."
+readme = "README.md"
 keywords = ["pdf", "ir", "intermediate-representation", "document"]
 categories = ["text-processing", "graphics"]
 

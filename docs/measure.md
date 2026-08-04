@@ -1,6 +1,6 @@
-# Scaled Line Measurement (`tpt-glyph-measure`)
+# Scaled Line Measurement (`out-glyph-measure`)
 
-`tools/tpt-glyph-measure` reports the real-world length of geometry drawn on
+`tools/out-glyph-measure` reports the real-world length of geometry drawn on
 a PDF page, given that page's drawing scale. It's built for scanned/drafted
 technical drawings (architectural plans, engineering diagrams) where a line
 on the page represents a real-world distance at some known ratio.
@@ -14,16 +14,16 @@ size), then converts that to a real-world length under the page's scale.
 
 ```sh
 # List every painted path on page 1 with its length in millimeters.
-tpt-glyph-measure drawing.pdf --page 1 --scale "1:100"
+out-glyph-measure drawing.pdf --page 1 --scale "1:100"
 
 # Measure just one path (index as listed above), in feet.
-tpt-glyph-measure drawing.pdf --page 1 --path-index 2 --scale "1/4in=1ft" --unit ft
+out-glyph-measure drawing.pdf --page 1 --path-index 2 --scale "1/4in=1ft" --unit ft
 
 # Different scales on different pages of the same document.
-tpt-glyph-measure drawing.pdf --page 3 --scale "1:100" --page-scale "3=1:50"
+out-glyph-measure drawing.pdf --page 3 --scale "1:100" --page-scale "3=1:50"
 
 # Load a scale table from a config file instead.
-tpt-glyph-measure drawing.pdf --page 1 --scale-file scales.json
+out-glyph-measure drawing.pdf --page 1 --scale-file scales.json
 ```
 
 Output is one line per measured path:
@@ -115,3 +115,4 @@ represent an 80×60-*point* shape drawn at 1:100 corresponds to a roughly
 - **No path selection UI.** There's no way to click a specific line in a
   viewer — you list all paths on a page, find the index of the one you
   want, and re-run with `--path-index`.
+

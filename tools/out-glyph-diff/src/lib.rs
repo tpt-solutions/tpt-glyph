@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-diff
+// TPT Glyph — out-glyph-diff
 //
 // Pixel-diff comparison between TPT Glyph output and a Ghostscript reference
 // render. Computes MSE, peak (max) per-channel error, and a structural

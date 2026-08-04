@@ -1,5 +1,5 @@
 [package]
-name = "tpt-glyph-fuzz"
+name = "out-glyph-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"

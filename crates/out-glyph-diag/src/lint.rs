@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-diag / lint
+// TPT Glyph — out-glyph-diag / lint
 //
 // Structural sanity checks over a parsed `tpt-glyph-pdf-ir::Document`, used
 // by the `check` subcommand to flag corrupted or non-standard PDF structure

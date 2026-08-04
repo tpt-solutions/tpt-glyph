@@ -28,11 +28,11 @@ passes before opening a pull request.
 | `crates/tpt-glyph-core` | Engine: immutable `GraphicsState`, geometry, canvas, rasterizer, backends. |
 | `crates/tpt-glyph-cli` | The `glyph` binary (render/convert commands). |
 | `crates/tpt-glyph-kg` | Knowledge graph (operators → state → pixel buffer). |
-| `crates/tpt-glyph-diag` | AI-assisted diagnostic tool. |
+| `crates/out-glyph-diag` | AI-assisted diagnostic tool. |
 | `crates/tpt-glyph-ps` | PostScript interpreter. |
 | `crates/tpt-glyph-pdf` | PDF parsing/rendering. |
-| `tools/tpt-glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript). |
-| `tools/tpt-glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
+| `tools/out-glyph-diff` | Pixel-diff harness (TPT Glyph vs Ghostscript). |
+| `tools/out-glyph-fixtures` | Generator for synthetic multi-page PDF stress fixtures. |
 | `fuzz/` | `cargo-fuzz` targets for the parser/interpreter (Phase 10). |
 | `fixtures/` | Visual-diff corpus and generated renders. |
 | `docs/` | Architecture and testing documentation. |
@@ -47,7 +47,7 @@ passes before opening a pull request.
    `tpt-glyph-core::raster`, with the optional `raqote` CPU backend) turns the tree
    into pixels. GPU/CPU backends implement the same trait.
 3. **Knowledge-graph-driven operators.** The interpreter dispatch table is
-   derived from the `tpt-glyph-kg` catalog; the `tpt-glyph-diag` tool verifies the two
+   derived from the `tpt-glyph-kg` catalog; the `out-glyph-diag` tool verifies the two
    stay in sync.
 4. **Fail closed on untrusted input.** The PostScript interpreter enforces
    `ResourceLimits` (operand-stack size, exec-stack depth, draw-command count,
@@ -71,9 +71,9 @@ See [docs/testing.md](./docs/testing.md). In short: add a fixture to
 ### Knowledge graph & diagnostics
 
 ```sh
-cargo run -p tpt-glyph-diag -- coverage     # operator coverage report
-cargo run -p tpt-glyph-diag -- validate     # dispatch table vs graph consistency
-cargo run -p tpt-glyph-diag -- build --export fixtures/kg.json
+cargo run -p out-glyph-diag -- coverage     # operator coverage report
+cargo run -p out-glyph-diag -- validate     # dispatch table vs graph consistency
+cargo run -p out-glyph-diag -- build --export fixtures/kg.json
 ```
 
 ### Fuzzing untrusted input (Phase 10)
@@ -95,3 +95,4 @@ crash is not already covered by a `ResourceLimits` guard, reduce the input with
 - Keep PRs focused; describe the *why* as well as the *what*.
 - Add or update tests for new operators, rasterization paths, or backends.
 - CI must stay green (build, lint, visual-diff).
+

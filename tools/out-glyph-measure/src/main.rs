@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-measure CLI
+// TPT Glyph — out-glyph-measure CLI
 //
-// Thin CLI wrapper around the `tpt-glyph-measure` library: parses scale
+// Thin CLI wrapper around the `tpt-glyph-pdf-measure` library: parses scale
 // options, opens the requested PDF page, and prints measured path lengths.
 
 use clap::Parser;
-use tpt_glyph_measure::{measure_page, measure_path, LengthUnit, ScaleSpec, ScaleTable};
+use out_glyph_measure::{measure_page, measure_path, LengthUnit, ScaleSpec, ScaleTable};
 
 #[derive(Parser)]
 #[command(
-    name = "tpt-glyph-measure",
+    name = "out-glyph-measure",
     version,
     about = "Report real-world lengths of PDF page geometry under a drawing scale"
 )]
@@ -113,7 +113,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn print_measurement(m: &tpt_glyph_measure::Measurement, unit: LengthUnit) {
+fn print_measurement(m: &out_glyph_measure::Measurement, unit: LengthUnit) {
     println!(
         "path {}: {:?}, {:.3} pdf units -> {:.3}{unit}",
         m.path_index,

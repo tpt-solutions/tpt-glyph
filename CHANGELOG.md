@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tooling
 
-- `tools/tpt-glyph-fixtures` generates the multi-page PDF stress corpus
+- `tools/out-glyph-fixtures` generates the multi-page PDF stress corpus
   (`fixtures/pdf/multipage-4.pdf`).
 
 ## [0.1.0] - 2026-07-18
@@ -51,4 +51,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 3 knowledge-graph subsystem with coverage/validation tooling.
 - Phase 4 PostScript interpreter (26 catalog operators) with KG-driven dispatch.
 - Phase 5 PDF parsing & rendering (page tree, content streams, fonts/XObjects).
-- Phase 9 `tpt-glyph-diag` AI-assisted diagnostic tool.
+- Phase 9 `out-glyph-diag` AI-assisted diagnostic tool.
+

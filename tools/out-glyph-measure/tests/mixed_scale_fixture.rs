@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-measure integration test
+// TPT Glyph — out-glyph-measure integration test
 //
 // Builds a real multi-page PDF (via tpt-glyph-pdf-writer) with known-length
 // geometry on each page, applies a different scale per page through a
@@ -8,7 +8,7 @@
 // correct — the "mixed-scale multi-page fixture" the Phase 16 checklist
 // calls for.
 
-use tpt_glyph_measure::{measure_page, ScaleSpec, ScaleTable};
+use out_glyph_measure::{measure_page, ScaleSpec, ScaleTable};
 use tpt_glyph_pdf_writer::{Stream, Value, Writer};
 
 /// A 2-page PDF: page 1 draws a 100-unit-long horizontal line, page 2 a

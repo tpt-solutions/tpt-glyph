@@ -1,5 +1,5 @@
 [package]
-name = "tpt-glyph-fixtures"
+name = "out-glyph-fixtures"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,9 +8,13 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Generates synthetic multi-page PDF fixtures for TPT Glyph stress tests."
+publish = false
+readme = "README.md"
+keywords = ["pdf", "fixtures", "testing", "generator", "stress-test"]
+categories = ["development-tools", "command-line-utilities"]
 
 [[bin]]
-name = "tpt-glyph-fixtures"
+name = "out-glyph-fixtures"
 path = "src/main.rs"
 
 [dependencies]

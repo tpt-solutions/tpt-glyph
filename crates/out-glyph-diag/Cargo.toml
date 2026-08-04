@@ -1,5 +1,5 @@
 [package]
-name = "tpt-glyph-diag"
+name = "out-glyph-diag"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,9 +8,13 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "AI-assisted diagnostic tooling for TPT Glyph, built on the rendering knowledge graph."
+publish = false
+readme = "README.md"
+keywords = ["diagnostics", "pdf", "postscript", "knowledge-graph", "developer-tools"]
+categories = ["development-tools", "command-line-utilities"]
 
 [[bin]]
-name = "tpt-glyph-diag"
+name = "out-glyph-diag"
 path = "src/main.rs"
 
 [dependencies]
@@ -18,7 +22,7 @@ tpt-glyph-core.workspace = true
 tpt-glyph-kg.workspace = true
 tpt-glyph-pdf-ir = { workspace = true, features = ["std"] }
 tpt-glyph-pdf-parser.workspace = true
-tpt-glyph-diff = { path = "../../tools/tpt-glyph-diff", version = "0.1.0" }
+out-glyph-diff = { path = "../../tools/out-glyph-diff", version = "0.1.0" }
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true

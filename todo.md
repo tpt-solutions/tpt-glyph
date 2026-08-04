@@ -7,7 +7,7 @@ TPT Glyph: a secure, sandboxed, multi-threaded PDF/PostScript rendering engine w
 ## Phase 0 — Project Setup & Licensing
 
 - [x] Initialize Cargo workspace (`tpt-glyph`) with member crates
-- [x] Create crate layout: `crates/tpt-glyph-core` (engine lib), `crates/tpt-glyph-cli` (binary), `crates/tpt-glyph-kg` (knowledge graph), `crates/tpt-glyph-diag` (AI diagnostic tool)
+- [x] Create crate layout: `crates/tpt-glyph-core` (engine lib), `crates/tpt-glyph-cli` (binary), `crates/tpt-glyph-kg` (knowledge graph), `crates/out-glyph-diag` (AI diagnostic tool)
 - [x] Add `LICENSE-MIT` (Copyright TPT Solutions)
 - [x] Add `LICENSE-APACHE` (Copyright TPT Solutions)
 - [x] Add `license = "MIT OR Apache-2.0"` to all crate `Cargo.toml` files
@@ -117,7 +117,7 @@ and the Phase 1 harness now renders PDF candidates.
 
 ## Phase 9 — AI-Assisted Diagnostic Tool
 
-- [x] Design `tpt-glyph-diag` companion tool consuming the Phase 3 knowledge graph
+- [x] Design `out-glyph-diag` companion tool consuming the Phase 3 knowledge graph
 - [x] Implement operator coverage reporting (which PS/PDF operators are implemented vs missing)
 - [x] Implement Ghostscript-diff-driven analysis (surface which fixtures fail and why, using Phase 1 harness output)
 - [x] Implement AI/LLM-assisted fix suggestion feature (propose likely causes/fixes from diff + KG context)
@@ -167,7 +167,7 @@ Work completed this session:
   arithmetic operators. Kept `DebugRasterizer` for existing tests.
 - **Phase 7** — Wired concurrent per-page PDF rendering into the CLI via `rayon`
   (`--parallel`), reusing the immutable-state safety model.
-- **Phase 9** — Added `tpt-glyph-diag diff` subcommand that consumes a `tpt-glyph-diff` report,
+- **Phase 9** — Added `out-glyph-diag diff` subcommand that consumes a `out-glyph-diff` report,
   prints per-fixture metric hints, and cross-references failures with the knowledge graph
   to suggest related unimplemented operators.
 - **Phase 0/1** — Added `docs/CONTRIBUTING.md`; updated `README.md` status table.
@@ -194,7 +194,7 @@ Completed the remaining checklist items across Phases 6, 7, 8, 10, and 11:
   Added a backend-parity test (`backends::raqote::tests`) asserting reference and
   raqote render the same document equivalently (edge-only divergence). Added a
   `criterion` benchmark (`benches/backends.rs`) comparing both backends.
-- **Phase 7** — Added `tools/tpt-glyph-fixtures` to generate `fixtures/pdf/multipage-4.pdf`
+- **Phase 7** — Added `tools/out-glyph-fixtures` to generate `fixtures/pdf/multipage-4.pdf`
   (4 distinct colored pages). Added `crates/tpt-glyph-pdf/tests/concurrency.rs`: a
   sequential render test and a `rayon` stress test proving deterministic,
   leak-free concurrent per-page rendering.
@@ -275,7 +275,7 @@ in every combination.
 - [x] Complete `tpt-glyph-pdf-parser` to fully populate `tpt-glyph-pdf-ir`
 - [x] Build `tpt-glyph-pdf-measure`: text metrics (advance widths, ascents/descents via `tpt-glyph-font`, including embedded font subsets), geometric bounding boxes, ink-coverage estimation
 - [x] Build `tpt-glyph-pdf-editor`: transactional IR-mutation API (`Editor::load`, `replace_text`, `insert_image`, `save` with garbage collection of unused objects)
-- [x] Integrate `tpt-glyph-diag` to flag corrupted/non-standard PDF structures during parsing
+- [x] Integrate `out-glyph-diag` to flag corrupted/non-standard PDF structures during parsing
 
 ## Phase 15 — High-Level Typesetting Suite
 
@@ -286,7 +286,7 @@ in every combination.
 ## Phase 16 — Scaled Line-Measurement Tool
 
 - [x] Design a per-page drawing-scale specification (e.g. `1:100`, `1/4"=1'-0"`), suppliable via CLI flag or config file and keyed by page number
-- [x] Build `tools/tpt-glyph-measure`: standalone CLI that opens a PDF/PS page and reports the geometric length (in PDF units) of a given line/path, reusing `tpt-glyph-pdf-measure`'s geometry primitives (Phase 14)
+- [x] Build `tools/out-glyph-measure`: standalone CLI that opens a PDF/PS page and reports the geometric length (in PDF units) of a given line/path, reusing `tpt-glyph-pdf-measure`'s geometry primitives (Phase 14)
 - [x] Apply the page's scale factor to convert a measured length into real-world units, supporting documents where different pages use different scales
 - [x] Support common scale conventions (architectural feet-inches ratios, engineering ratios like `1:50`) and common target units (mm/cm/m, in/ft)
 - [x] Add unit tests: known geometry + scale → expected real-world length, including a mixed-scale multi-page fixture
@@ -377,10 +377,10 @@ backends.
 Went on to build the remaining v2.0 crates: `tpt-glyph-pdf-measure` (content-
 stream geometry walker + text metrics), `tpt-glyph-pdf-editor` (functional
 `replace_text`/`insert_image`/`save`, rebuilding the PDF from the semantic IR
-so GC of unused objects is inherent), `tpt-glyph-diag check` (structural PDF
+so GC of unused objects is inherent), `out-glyph-diag check` (structural PDF
 lints), `tpt-glyph-typeset` (greedy line-breaking + justification +
 pagination + inline math, emitting to `tpt-glyph-core` draw commands), and
-`tools/tpt-glyph-measure` (scaled real-world length reporting, `docs/measure.md`).
+`tools/out-glyph-measure` (scaled real-world length reporting, `docs/measure.md`).
 Two more bugs turned up and were fixed along the way: the pdf-editor's
 content-stream serializer emitted generic `sc`/`SC` for RGB fill/stroke
 colors instead of `rg`/`RG`, which the render pipeline silently treats as
@@ -479,5 +479,6 @@ Verification this session: `cargo test -p tpt-glyph-ps -p tpt-glyph-pdf-parser`
 (40 tests pass), `cargo test --doc -p tpt-glyph-core -p tpt-glyph-math` (6
 doctests pass), `cargo clippy -p tpt-glyph-core -p tpt-glyph-math
 --all-features` (clean), `cargo fmt --all --check` (clean on touched files).
+
 
 

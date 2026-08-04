@@ -45,9 +45,9 @@ cargo bench -p tpt-glyph-core
 cargo run -p tpt-glyph-cli -- render input.pdf ./out --dpi 150 --parallel --backend cpuraqote
 
 # Knowledge-graph diagnostics
-cargo run -p tpt-glyph-diag -- coverage     # operator implementation coverage
-cargo run -p tpt-glyph-diag -- validate     # dispatch table vs. KG consistency (fails non-zero on mismatch)
-cargo run -p tpt-glyph-diag -- build --export fixtures/kg.json
+cargo run -p out-glyph-diag -- coverage     # operator implementation coverage
+cargo run -p out-glyph-diag -- validate     # dispatch table vs. KG consistency (fails non-zero on mismatch)
+cargo run -p out-glyph-diag -- build --export fixtures/kg.json
 
 # Fuzzing (requires nightly + cargo-fuzz; targets in fuzz/fuzz_targets/)
 cargo +nightly fuzz run ps_interpreter
@@ -114,7 +114,7 @@ deliberately isolates graphics-state attributes (`stroke_color`, `ctm`, `clip_pa
 ...) as their own node kind — this is the same isolation principle as the immutable
 `GraphicsState` struct, just modeled explicitly.
 
-`tpt-glyph-diag` (`crates/tpt-glyph-diag/src/main.rs`) is the consumer: `validate`
+`out-glyph-diag` (`crates/out-glyph-diag/src/main.rs`) is the consumer: `validate`
 checks the KG and the live dispatch table haven't drifted apart, `coverage` reports
 which cataloged operators are actually implemented, and `diff` cross-references a
 visual-diff `diff-report.json` against unimplemented operators to suggest likely
@@ -131,7 +131,7 @@ only). Any new parser/interpreter code path that can loop, recurse, or grow a
 stack/buffer based on document content must respect these bounds — add a regression
 test that trips the limit, per [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md).
 
-### Visual-diff harness (`tools/tpt-glyph-diff`, `tools/tpt-glyph-fixtures`)
+### Visual-diff harness (`tools/out-glyph-diff`, `tools/out-glyph-fixtures`)
 
 Correctness is validated by pixel-diffing TPT Glyph's output against Ghostscript
 reference renders (MSE / peak-error / SSIM against `fixtures/thresholds.json`), not
@@ -148,11 +148,11 @@ directory is picked up automatically by the harness, no code change needed. See
 | `crates/tpt-glyph-core` | `GraphicsState`, geometry, `Canvas`, `RenderTree`, `Rasterizer`/`Backend` abstraction, reference + raqote rasterizers. |
 | `crates/tpt-glyph-cli` | `tpt-glyph` binary — wires PS/PDF input, KG-driven interpreter, and backends together behind `render`/`version`. |
 | `crates/tpt-glyph-kg` | Knowledge graph: operator catalog, ingestion, KG↔dispatch-table validation. |
-| `crates/tpt-glyph-diag` | CLI consuming the KG for coverage/validate/diff-report analysis. |
+| `crates/out-glyph-diag` | CLI consuming the KG for coverage/validate/diff-report analysis. |
 | `crates/tpt-glyph-ps` | PostScript lexer/parser/interpreter, operand/exec stacks, `ResourceLimits`. |
 | `crates/tpt-glyph-pdf` | PDF parsing (via the `pdf` crate) and content-stream → core-pipeline mapping. |
-| `tools/tpt-glyph-diff` | Pixel-diff comparator (MSE/peak-error/SSIM) for the visual-diff harness. |
-| `tools/tpt-glyph-fixtures` | Generates synthetic multi-page PDF stress fixtures. |
+| `tools/out-glyph-diff` | Pixel-diff comparator (MSE/peak-error/SSIM) for the visual-diff harness. |
+| `tools/out-glyph-fixtures` | Generates synthetic multi-page PDF stress fixtures. |
 | `fuzz/` | `cargo-fuzz` targets: `ps_interpreter`, `pdf_content` (nightly toolchain only). |
 
 ## Conventions
@@ -165,3 +165,4 @@ directory is picked up automatically by the harness, no code change needed. See
   transform `GraphicsState` by returning a new value (`with_fill_color`,
   `concat_transform`, ...), never by mutating in place — this is the entire point
   of the architecture (see [docs/architecture.md](docs/architecture.md)).
+

@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Command-line interface for the TPT Glyph PDF/PostScript rendering engine."
+readme = "README.md"
 keywords = ["pdf", "postscript", "render", "cli", "rasterizer"]
 categories = ["command-line-utilities", "graphics"]
 

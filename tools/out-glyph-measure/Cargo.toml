@@ -1,5 +1,5 @@
 [package]
-name = "tpt-glyph-measure"
+name = "out-glyph-measure"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,9 +8,13 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Scaled line-measurement CLI: reports real-world lengths of PDF page geometry given a per-page drawing scale (e.g. 1:100, 1/4in=1ft)."
+publish = false
+readme = "README.md"
+keywords = ["pdf", "measure", "scale", "geometry", "cli"]
+categories = ["development-tools", "command-line-utilities"]
 
 [[bin]]
-name = "tpt-glyph-measure"
+name = "out-glyph-measure"
 path = "src/main.rs"
 
 [dependencies]

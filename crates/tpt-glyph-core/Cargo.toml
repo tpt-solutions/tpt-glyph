@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Core rendering engine for TPT Glyph: graphics state, geometry, and pipeline abstractions."
+readme = "README.md"
 keywords = ["pdf", "postscript", "rendering", "graphics", "rasterizer"]
 categories = ["graphics", "rendering", "multimedia::images"]
 

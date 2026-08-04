@@ -65,8 +65,8 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Build tpt-glyph-cli + tpt-glyph-diff
-        run: cargo build -p tpt-glyph-cli -p tpt-glyph-diff --release
+      - name: Build tpt-glyph-cli + out-glyph-diff
+        run: cargo build -p tpt-glyph-cli -p out-glyph-diff --release
       - name: Set up Docker (for Ghostscript references)
         uses: docker/setup-buildx-action@v3
       - name: Build Ghostscript image
@@ -99,7 +99,7 @@ jobs:
         # Candidates are produced above; missing references (e.g. when Docker is
         # unavailable) are reported as pending (non-fatal).
         run: |
-          cargo run -p tpt-glyph-diff -- \
+          cargo run -p out-glyph-diff -- \
             --reference fixtures/reference \
             --candidate fixtures/candidate \
             --thresholds fixtures/thresholds.json \

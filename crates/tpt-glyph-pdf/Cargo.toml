@@ -8,6 +8,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/tpt-solutions/tpt-glyph"
 homepage = "https://github.com/tpt-solutions/tpt-glyph"
 description = "PDF parsing and rendering for TPT Glyph, built on the pdf crate and the shared tpt-glyph-core pipeline."
+readme = "README.md"
+keywords = ["pdf", "render", "rendering", "pdf-parser", "rasterizer"]
+categories = ["graphics", "multimedia::images"]
 
 [dependencies]
 tpt-glyph-core = { workspace = true }

@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Geometry and text-metric measurement over the TPT Glyph PDF IR: bounding boxes, path lengths, ink-coverage estimation, and font-based text metrics."
+readme = "README.md"
 keywords = ["pdf", "measure", "metrics", "geometry", "typography"]
 categories = ["text-processing", "graphics"]
 

@@ -1819,6 +1819,54 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
+name = "out-glyph-diag"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "out-glyph-diff",
+ "serde",
+ "serde_json",
+ "tpt-glyph-core",
+ "tpt-glyph-kg",
+ "tpt-glyph-pdf-ir",
+ "tpt-glyph-pdf-parser",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "out-glyph-diff"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "image",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "out-glyph-fixtures"
+version = "0.1.0"
+
+[[package]]
+name = "out-glyph-measure"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "serde",
+ "serde_json",
+ "tpt-glyph-pdf-ir",
+ "tpt-glyph-pdf-measure",
+ "tpt-glyph-pdf-parser",
+ "tpt-glyph-pdf-writer",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2763,40 +2811,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tpt-glyph-diag"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "serde",
- "serde_json",
- "tpt-glyph-core",
- "tpt-glyph-diff",
- "tpt-glyph-kg",
- "tpt-glyph-pdf-ir",
- "tpt-glyph-pdf-parser",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "tpt-glyph-diff"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "image",
- "serde",
- "serde_json",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "tpt-glyph-fixtures"
-version = "0.1.0"
-
-[[package]]
 name = "tpt-glyph-font"
 version = "0.1.0"
 dependencies = [
@@ -2823,20 +2837,6 @@ dependencies = [
  "serde",
  "tpt-glyph-core",
  "tpt-glyph-font",
-]
-
-[[package]]
-name = "tpt-glyph-measure"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "serde",
- "serde_json",
- "tpt-glyph-pdf-ir",
- "tpt-glyph-pdf-measure",
- "tpt-glyph-pdf-parser",
- "tpt-glyph-pdf-writer",
 ]
 
 [[package]]

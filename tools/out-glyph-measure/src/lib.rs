@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-measure
+// TPT Glyph — out-glyph-measure
 //
 // Scaled line-measurement over a PDF page: reuses
 // `tpt-glyph-pdf-measure`'s geometry primitives to find painted paths, then

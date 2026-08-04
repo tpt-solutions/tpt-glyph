@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "High-level document typesetting: paragraph layout, pagination, and page breaks, with inline tpt-glyph-math support, emitted as tpt-glyph-core draw commands."
+readme = "README.md"
 keywords = ["typesetting", "layout", "pagination", "text", "document"]
 categories = ["text-processing", "graphics"]
 

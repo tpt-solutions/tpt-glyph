@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //
-// TPT Glyph — tpt-glyph-diff (binary)
+// TPT Glyph — out-glyph-diff (binary)
 //
 // Walks a fixture corpus, compares TPT Glyph candidate renders against
 // Ghostscript reference renders, and emits a JSON report plus a CI exit code.
@@ -8,11 +8,11 @@
 use clap::{Parser, ValueEnum};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use tpt_glyph_diff::{compare, load_rgba, FixtureReport, Thresholds, Verdict};
+use out_glyph_diff::{compare, load_rgba, FixtureReport, Thresholds, Verdict};
 
 #[derive(Parser)]
 #[command(
-    name = "tpt-glyph-diff",
+    name = "out-glyph-diff",
     version,
     about = "Pixel-diff TPT Glyph vs Ghostscript across a fixture corpus"
 )]
@@ -93,7 +93,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     println!(
-        "tpt-glyph-diff: {} passed, {} failed, {} pending (of {})",
+        "out-glyph-diff: {} passed, {} failed, {} pending (of {})",
         passed,
         failed,
         pending,

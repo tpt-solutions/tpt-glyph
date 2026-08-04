@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Robust PDF parsing into the canonical tpt-glyph-pdf-ir intermediate representation."
+readme = "README.md"
 keywords = ["pdf", "parser", "ir", "document"]
 categories = ["text-processing", "graphics"]
 

@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Transactional, functional-style editing of PDF documents: replace text, insert images, and save via tpt-glyph-pdf-writer."
+readme = "README.md"
 keywords = ["pdf", "editor", "edit", "document", "transactional"]
 categories = ["text-processing", "graphics"]
 
