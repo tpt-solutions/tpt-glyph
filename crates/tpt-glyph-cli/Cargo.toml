@@ -16,7 +16,7 @@ name = "tpt-glyph"
 path = "src/main.rs"
 
 [dependencies]
-tpt-glyph-core = { workspace = true, features = ["raqote-backend"] }
+tpt-glyph-core = { workspace = true, features = ["raqote-backend", "wgpu-backend"] }
 tpt-glyph-kg.workspace = true
 tpt-glyph-ps.workspace = true
 tpt-glyph-pdf = { workspace = true }

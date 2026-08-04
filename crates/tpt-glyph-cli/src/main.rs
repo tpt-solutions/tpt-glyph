@@ -31,7 +31,7 @@ enum BackendChoice {
     Cpu,
     /// raqote CPU rasterizer (antialiased; compiled into this build).
     CpuRaqote,
-    /// GPU rasterizer via wgpu (currently falls back to CPU).
+    /// GPU rasterizer via wgpu (falls back to CPU if no adapter is available).
     Gpu,
 }
 
@@ -67,8 +67,8 @@ enum Command {
         #[arg(long)]
         pages: Option<String>,
         /// Rasterization backend: `auto` (best available), `cpu` (reference
-        /// scanline), `cpuraqote` (raqote CPU), or `gpu` (resolves to CPU until
-        /// the wgpu path lands).
+        /// scanline), `cpuraqote` (raqote CPU), or `gpu` (wgpu; falls back to
+        /// CPU if no adapter is available at runtime).
         #[arg(long, value_enum, default_value_t = BackendChoice::Auto)]
         backend: BackendChoice,
         /// Render pages concurrently across the rayon thread pool.

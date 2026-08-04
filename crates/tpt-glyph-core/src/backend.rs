@@ -21,23 +21,29 @@ pub enum Backend {
     Cpu,
     /// Accelerated CPU rasterizer backed by `raqote` (deterministic fallback).
     CpuRaqote,
-    /// GPU rasterizer via `wgpu` (Phase 6 — currently falls back to CPU).
+    /// GPU rasterizer via `wgpu`, tessellating fills/strokes and rendering
+    /// into a headless offscreen texture. Falls back to a CPU backend if no
+    /// adapter is available at runtime (see `SelectedBackend::new`).
     Gpu,
 }
 
 impl Backend {
     /// Select the best available backend at runtime.
     ///
-    /// The GPU path is not yet implemented, so auto-selection resolves to the
-    /// CPU reference backend. The `raqote` backend is preferred over the
-    /// reference backend when it is compiled in, because it is a more mature,
-    /// antialiased CPU rasterizer. The wgpu detection hook is left in place for
-    /// Phase 6.
+    /// A GPU adapter is preferred when the `wgpu-backend` feature is
+    /// compiled in and an adapter is actually available at runtime (a real
+    /// probe, not just a compile-time check — a build with the feature
+    /// enabled still needs to run somewhere with a usable adapter). The
+    /// `raqote` CPU backend is the next preference when compiled in, as a
+    /// more mature, antialiased CPU rasterizer than the plain reference one.
     pub fn select(preferred: Option<Backend>) -> Backend {
         match preferred {
             Some(b) => b,
             None => {
-                // TODO(Phase 6): probe for a wgpu adapter; if present return Gpu.
+                #[cfg(feature = "wgpu-backend")]
+                if crate::backends::wgpu::WgpuRasterizer::adapter_available() {
+                    return Backend::Gpu;
+                }
                 if cfg!(feature = "raqote-backend") {
                     Backend::CpuRaqote
                 } else {
@@ -70,7 +76,21 @@ impl SelectedBackend {
                     Box::new(SoftwareRasterizer::new())
                 }
             }
-            Backend::Gpu => Box::new(SoftwareRasterizer::new()),
+            Backend::Gpu => {
+                #[cfg(feature = "wgpu-backend")]
+                {
+                    match crate::backends::wgpu::WgpuRasterizer::new() {
+                        Some(r) => Box::new(r),
+                        // No adapter available at runtime — fall back rather
+                        // than fail outright.
+                        None => Box::new(SoftwareRasterizer::new()),
+                    }
+                }
+                #[cfg(not(feature = "wgpu-backend"))]
+                {
+                    Box::new(SoftwareRasterizer::new())
+                }
+            }
         };
         Self {
             kind: backend,

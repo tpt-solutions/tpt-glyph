@@ -457,16 +457,36 @@ mod tests {
     }
 
     #[test]
-    fn backend_selection_resolves_to_a_cpu_backend() {
-        // Auto-selection prefers the raqote backend when compiled in, otherwise
-        // the reference software backend — both are CPU backends.
+    fn backend_selection_resolves_to_a_real_backend() {
+        // Auto-selection prefers GPU (when compiled in and an adapter is
+        // actually available at runtime), then raqote (when compiled in),
+        // then the reference software backend — all are valid outcomes,
+        // since which ones are available depends on the build's features
+        // and the machine's hardware.
         let kind = SelectedBackend::auto(None).kind();
-        assert!(matches!(kind, Backend::Cpu | Backend::CpuRaqote));
+        assert!(matches!(kind, Backend::Cpu | Backend::CpuRaqote | Backend::Gpu));
     }
 
     #[cfg(feature = "raqote-backend")]
     #[test]
-    fn backend_selection_prefers_raqote_when_available() {
+    fn backend_selection_prefers_raqote_over_plain_cpu_when_no_gpu() {
+        // Without a preference, and with no wgpu adapter available (or the
+        // wgpu-backend feature not compiled in), auto-selection must prefer
+        // raqote over the plain reference backend.
+        #[cfg(feature = "wgpu-backend")]
+        if crate::backends::wgpu::WgpuRasterizer::adapter_available() {
+            return; // GPU is available here, so raqote isn't the expected pick.
+        }
         assert_eq!(SelectedBackend::auto(None).kind(), Backend::CpuRaqote);
+    }
+
+    #[cfg(feature = "wgpu-backend")]
+    #[test]
+    fn backend_selection_prefers_gpu_when_adapter_available() {
+        if !crate::backends::wgpu::WgpuRasterizer::adapter_available() {
+            eprintln!("skipping: no wgpu adapter available in this environment");
+            return;
+        }
+        assert_eq!(SelectedBackend::auto(None).kind(), Backend::Gpu);
     }
 }

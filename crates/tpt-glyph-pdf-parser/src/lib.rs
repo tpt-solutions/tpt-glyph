@@ -69,6 +69,18 @@ pub fn parse_path(path: impl AsRef<std::path::Path>) -> Result<ir::Document> {
     parse_bytes(&data)
 }
 
+/// Parse a PDF from any `Read` source into the canonical immutable IR. This is
+/// the trait-based ingestion path: callers supply a reader (file, network
+/// stream, in-memory cursor, …) rather than a filesystem path, keeping the
+/// parser free of hardcoded file I/O (v2.0 cross-cutting goal).
+pub fn parse_read<R: std::io::Read>(mut reader: R) -> Result<ir::Document> {
+    let mut data = Vec::new();
+    reader
+        .read_to_end(&mut data)
+        .map_err(|e| ParseError::Malformed(e.to_string()))?;
+    parse_bytes(&data)
+}
+
 // ---------------------------------------------------------------------------
 // Trailer
 // ---------------------------------------------------------------------------

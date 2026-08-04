@@ -26,6 +26,12 @@ libm = "0.2"
 # Optional accelerated backends (Phase 6).
 raqote = { workspace = true, optional = true }
 wgpu = { workspace = true, optional = true }
+# Path tessellation (fill/stroke -> triangles) for the wgpu backend.
+lyon = { version = "1.0", optional = true }
+# Blocks on wgpu's async adapter/device/buffer-map futures; the rasterizer
+# is a synchronous `Rasterizer::rasterize` call, so there's no async runtime
+# to hand these off to.
+pollster = { version = "0.3", optional = true }
 
 [features]
 default = ["std"]
@@ -36,8 +42,9 @@ default = ["std"]
 std = ["dep:rayon", "dep:image"]
 # CPU-backed rasterization via raqote; used as the deterministic fallback path.
 raqote-backend = ["dep:raqote", "std"]
-# GPU-backed rasterization via wgpu; not yet wired to a full pipeline (Phase 6).
-wgpu-backend = ["dep:wgpu", "std"]
+# GPU-backed rasterization via wgpu: tessellates fills/strokes (lyon) and
+# rasterizes them on a headless (surfaceless) wgpu device.
+wgpu-backend = ["dep:wgpu", "dep:lyon", "dep:pollster", "std"]
 
 [dev-dependencies]
 criterion = "0.5"

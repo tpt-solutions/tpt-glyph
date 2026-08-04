@@ -5,6 +5,8 @@
 // Phase 6 + Phase 7 benchmarks:
 //   * `rasterize_reference` — reference software scanline rasterizer.
 //   * `rasterize_raqote`    — raqote CPU backend (only when compiled in).
+//   * `rasterize_wgpu`      — wgpu GPU backend (only when compiled in and an
+//     adapter is available at runtime).
 //   * `render_pages_parallel` / `render_pages_serial` — multi-page PDF throughput
 //     (Phase 7) comparing concurrent vs single-threaded rendering.
 
@@ -99,8 +101,33 @@ fn rasterize_raqote(c: &mut Criterion) {
     });
 }
 
-#[cfg(feature = "raqote-backend")]
+#[cfg(feature = "wgpu-backend")]
+fn rasterize_wgpu(c: &mut Criterion) {
+    use tpt_glyph_core::backends::wgpu::WgpuRasterizer;
+    let Some(rasterizer) = WgpuRasterizer::new() else {
+        eprintln!("skipping rasterize_wgpu: no wgpu adapter available in this environment");
+        return;
+    };
+    let tree = sample_tree();
+    c.bench_function("rasterize_wgpu", |b| {
+        b.iter(|| {
+            let canvas = rasterizer.rasterize(&tree).unwrap();
+            criterion::black_box(canvas);
+        })
+    });
+}
+
+#[cfg(all(feature = "raqote-backend", feature = "wgpu-backend"))]
+criterion_group!(
+    benches,
+    rasterize_reference,
+    rasterize_raqote,
+    rasterize_wgpu
+);
+#[cfg(all(feature = "raqote-backend", not(feature = "wgpu-backend")))]
 criterion_group!(benches, rasterize_reference, rasterize_raqote);
-#[cfg(not(feature = "raqote-backend"))]
+#[cfg(all(not(feature = "raqote-backend"), feature = "wgpu-backend"))]
+criterion_group!(benches, rasterize_reference, rasterize_wgpu);
+#[cfg(all(not(feature = "raqote-backend"), not(feature = "wgpu-backend")))]
 criterion_group!(benches, rasterize_reference);
 criterion_main!(benches);

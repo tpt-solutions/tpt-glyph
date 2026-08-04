@@ -90,7 +90,7 @@ and the Phase 1 harness now renders PDF candidates.
 
 ## Phase 6 — Rasterization Backends
 
-- [ ] Implement `wgpu`-based GPU rendering backend (primary path)
+- [x] Implement `wgpu`-based GPU rendering backend (primary path)
 - [x] Implement `raqote`-based CPU rendering backend (fallback path)
 - [x] Implement backend abstraction/trait so pipeline is backend-agnostic
 - [x] Implement runtime backend selection/detection (GPU available vs fallback)
@@ -131,7 +131,7 @@ and the Phase 1 harness now renders PDF candidates.
 - [x] Add resource-limit enforcement (memory, CPU time, recursion depth, output size)
 - [x] Set up fuzzing (e.g. `cargo-fuzz`) targeting parser and interpreter
 - [x] Run and triage fuzzing results; fix discovered crashes/hangs
-- [ ] Conduct a security review pass before release
+- [x] Conduct a security review pass before release
 - [x] Add `SECURITY.md` with vulnerability reporting process
 
 ## Phase 11 — Release Prep
@@ -298,9 +298,9 @@ PostScript isn't supported (no PS equivalent of `tpt-glyph-pdf-ir` exists).
 ## Cross-cutting (v2.0 crates.io & reuse goals)
 
 - [x] Ensure `tpt-glyph-core`, `tpt-glyph-pdf-ir`, and `tpt-glyph-math` are `no_std` (+ `alloc`) compatible for WASM/embedded use
-- [ ] Use trait-based abstractions (`Read`/`Write` or a custom `ResourceProvider`) instead of hardcoded file I/O across new crates
-- [ ] Add `#[doc = include_str!("../examples/...")]` compile-tested examples to public APIs ahead of docs.rs publication
-- [ ] (Long-term/exploratory) Investigate constraint-based layout in `tpt-glyph-typeset`, inspired by `tpt-telos`'s QF_LRA solver concepts
+- [x] Use trait-based abstractions (`Read`/`Write` or a custom `ResourceProvider`) instead of hardcoded file I/O across new crates
+- [x] Add `#[doc = include_str!("../examples/...")]` compile-tested examples to public APIs ahead of docs.rs publication
+- [x] (Long-term/exploratory) Investigate constraint-based layout in `tpt-glyph-typeset`, inspired by `tpt-telos`'s QF_LRA solver concepts
 
 ---
 
@@ -373,5 +373,111 @@ warnings` (clean), `cargo fmt --all --check` (clean), plus manual visual
 verification of `fixtures/pdf/hello.pdf`, `fixtures/ps/shapes.ps`, and the
 new math CLI demo's output rendered through both the reference and raqote
 backends.
+
+Went on to build the remaining v2.0 crates: `tpt-glyph-pdf-measure` (content-
+stream geometry walker + text metrics), `tpt-glyph-pdf-editor` (functional
+`replace_text`/`insert_image`/`save`, rebuilding the PDF from the semantic IR
+so GC of unused objects is inherent), `tpt-glyph-diag check` (structural PDF
+lints), `tpt-glyph-typeset` (greedy line-breaking + justification +
+pagination + inline math, emitting to `tpt-glyph-core` draw commands), and
+`tools/tpt-glyph-measure` (scaled real-world length reporting, `docs/measure.md`).
+Two more bugs turned up and were fixed along the way: the pdf-editor's
+content-stream serializer emitted generic `sc`/`SC` for RGB fill/stroke
+colors instead of `rg`/`RG`, which the render pipeline silently treats as
+black; and `tpt-glyph-typeset`'s own emission never applied the page-to-
+canvas y-flip (the same class of bug fixed earlier, just re-introduced in
+new code — now using the shared `GraphicsState::with_page_flip` helper).
+
+## Session Notes (2026-08-04, continued) — Phase 6 wgpu backend
+
+Implemented the real `wgpu`-based GPU rasterizer (`tpt-glyph-core::backends::wgpu`,
+`wgpu-backend` feature): fills/strokes are tessellated into triangles via
+`lyon` (winding-rule-aware for fills, cap/join for strokes), rendered with a
+single draw call per page into a headless offscreen `wgpu::Texture` (color
+carried per-vertex, not via a per-draw uniform, so batching needs no bind-
+group swaps), then read back into a `Canvas` — no window/swapchain
+involved anywhere. `Backend::select`'s auto-detection now does a real
+runtime adapter probe (`WgpuRasterizer::adapter_available()`) instead of
+the old always-false stub, preferring GPU when available, then raqote, then
+the plain reference backend; `SelectedBackend::new`'s `Gpu` arm falls back
+to the CPU reference rasterizer if device creation fails at runtime.
+Deliberately hard-aliased (no MSAA) for v1, matching the reference
+rasterizer's own quality bar rather than claiming false parity with
+raqote's antialiasing.
+
+This environment actually has a working GPU adapter (Intel UHD Graphics 770
+via Vulkan), confirmed with a standalone probe before committing to the
+implementation — so this wasn't just type-checked blind: the parity test
+(`wgpu_matches_reference_backend_when_a_gpu_is_available`) and a manual
+`tpt-glyph render --backend gpu` run against both `fixtures/ps/shapes.ps`
+and `fixtures/pdf/hello.pdf` were visually verified against real hardware,
+producing pixel-correct output matching the CPU backends. The test (and the
+new `backend_selection_prefers_gpu_when_adapter_available` test) both
+degrade to a skip-with-message on a machine with no adapter, rather than
+failing, since CI/other dev machines aren't guaranteed to have one.
+
+Verification: `cargo test --workspace --all-features`, `cargo clippy
+--workspace --all-targets --all-features -- -D warnings`, plus isolated
+`--features wgpu-backend` (no raqote) and `--no-default-features` (no_std)
+builds of `tpt-glyph-core` — all clean.
+
+---
+
+## Session Notes (2026-08-05)
+
+Worked the remaining open checklist items.
+
+- **Phase 10 — security review pass (done).** Found and fixed one genuine
+  pre-release defect: `tpt-glyph-ps`'s parser recursed on nested
+  procedures/arrays with no depth cap, so a deeply nested hostile document
+  could overflow the Rust stack *during parsing*, before the interpreter's own
+  exec-depth limit applied. Added `MAX_PARSE_DEPTH` (1000) + a `depth` counter
+  in `crates/tpt-glyph-ps/src/parser.rs` (fails closed with `PsError::Parse`),
+  and a `deeply_nested_array_is_rejected` regression test. Reviewed the rest of
+  the attack surface: the lone `unsafe` (wgpu `as_bytes`) is sound; Bézier
+  flattening and `pdf-measure` geometry recursion are both depth-bounded; the
+  interpreter's `ResourceLimits` are enforced fail-closed. Findings written up
+  in `docs/security-review.md`. (Residual recommendations there — max string
+  length, PDF decode-size cap — are non-blocking.)
+- **Cross-cutting — trait-based I/O (done).** Verified the new crates already
+  expose trait-friendly cores: `tpt-glyph-pdf-parser::parse_bytes(&[u8])` and
+  new `parse_read<R: Read>`; `tpt-glyph-font::Font::from_bytes(&[u8])`;
+  `tpt-glyph-pdf-writer::{finish, write_to(impl Write), save}`. Added
+  `parse_read` so there is a true `Read`-based ingestion path (no file-path
+  assumption) in the PDF parser. Hardcoded `fs::read`/`fs::write` now only
+  appears in binaries/tools and doctests, which is appropriate.
+- **Cross-cutting — compile-tested doc examples (done).** Added
+  `crates/tpt-glyph-core/examples/quickstart.md` and
+  `crates/tpt-glyph-math/examples/quickstart.md`, pulled in via
+  `#[doc = include_str!("../examples/quickstart.md")]` at each crate root so
+  `cargo test --doc` compiles them. All 6 doctests (3 per crate) pass;
+  `cargo clippy --all-features -p tpt-glyph-core -p tpt-glyph-math` clean.
+- **Cross-cutting — constraint-based layout (done, exploratory).** Wrote
+  `docs/constraint-layout.md`: a design note on adopting a QF_LRA solver
+  (inspired by `tpt-telos`) for multi-column / figure-flow / global-raggedness
+  pages in `tpt-glyph-typeset`, keeping the greedy breaker as the default fast
+  path. No code change; recommended as a post-2.0 enhancement.
+
+**Blocked / left to manual external steps (credentials + network required):**
+
+- **Phase 11 — final full visual-diff harness run.** This environment has
+  neither Docker nor a native `gs`/`Ghostscript`, and the harness needs
+  Ghostscript-rendered reference images to compare against. The CI `visual-diff`
+  job (`.github/workflows/ci.yml`) already builds the Ghostscript image and
+  runs the full corpus on every push/PR, so the run is automated there. Could
+  not be executed locally; left unchecked pending a CI run.
+- **Phase 11 `v1.0.0` tag/publish, Phase 12 (publish `tpt-glyph-core` +
+  `tpt-glyph-font`), Phase 13 (publish `tpt-glyph-math`), Phase 15 (`v2.0.0`
+  release).** Irreversible external actions requiring crates.io credentials and
+  a git tag/push; intentionally not performed. Crate metadata
+  (description/keywords/categories/license) was verified in prior sessions;
+  `tpt-glyph-math` (with `std`) carries a `tpt-glyph-core` path dependency, so
+  publish ordering must be core → math. Left unchecked; perform as the release
+  step.
+
+Verification this session: `cargo test -p tpt-glyph-ps -p tpt-glyph-pdf-parser`
+(40 tests pass), `cargo test --doc -p tpt-glyph-core -p tpt-glyph-math` (6
+doctests pass), `cargo clippy -p tpt-glyph-core -p tpt-glyph-math
+--all-features` (clean), `cargo fmt --all --check` (clean on touched files).
 
 

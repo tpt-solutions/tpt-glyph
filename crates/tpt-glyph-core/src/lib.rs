@@ -21,7 +21,8 @@
 //! # Example
 //!
 //! Build a `RenderTree` for a filled rectangle and rasterize it with the
-//! auto-selected backend:
+//! auto-selected backend — see `examples/quickstart.md` for the full,
+//! compile-tested version of this example:
 //!
 //! ```no_run
 //! use tpt_glyph_core::backend::SelectedBackend;
@@ -57,11 +58,19 @@
 //! #         control2: Point::new(x, (y0 + y1) / 2.0), end: Point::new(x, y1) }
 //! # }
 //! ```
+//!
+//! [`RenderTree`]: crate::render::RenderTree
+//!
+//! # Compile-tested examples
+//!
+//! The full quickstart examples below are pulled in from `examples/` and
+//! compiled by `cargo test --doc` so they cannot drift from the public API.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #[macro_use]
 extern crate alloc;
 
+#[doc = include_str!("../examples/quickstart.md")]
 pub mod backend;
 pub mod canvas;
 pub mod document;
@@ -72,7 +81,7 @@ pub mod math;
 pub mod raster;
 pub mod render;
 
-#[cfg(feature = "raqote-backend")]
+#[cfg(any(feature = "raqote-backend", feature = "wgpu-backend"))]
 pub mod backends;
 
 pub use error::{GlyphError, Result};

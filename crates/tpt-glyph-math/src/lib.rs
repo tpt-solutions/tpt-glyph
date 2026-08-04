@@ -42,6 +42,7 @@
 
 extern crate alloc;
 
+#[doc = include_str!("../examples/quickstart.md")]
 pub mod ast;
 pub mod atom;
 pub mod constants;

@@ -65,20 +65,30 @@ pub struct Program {
     pub objects: Vec<PsObject>,
 }
 
+/// Maximum delimiter nesting depth the parser will accept. A hostile document
+/// can nest arrays/procedures arbitrarily; unbounded recursion would overflow
+/// the Rust stack during parsing (before the interpreter's own exec-depth limit
+/// ever applies). This bound keeps parsing non-recursive-in-practice and is
+/// enforced per-`parse` call, independent of the interpreter's resource limits.
+pub const MAX_PARSE_DEPTH: usize = 1_000;
+
 /// Parse source text into an executable program.
 pub fn parse(src: &str) -> Result<Program> {
     let tokens = tokenize(src)?;
     let mut cursor = 0usize;
-    let objects = parse_sequence(&tokens, &mut cursor, None)?;
+    let objects = parse_sequence(&tokens, &mut cursor, None, 0)?;
     Ok(Program { objects })
 }
 
 /// Parse a sequence of objects terminated by `end` (e.g. `ProcEnd`/`ArrayEnd`)
-/// or EOF when `end` is `None`.
+/// or EOF when `end` is `None`. `depth` is the current delimiter nesting depth;
+/// it is incremented for each nested procedure/array and checked against
+/// `MAX_PARSE_DEPTH` to bound recursion (Phase 10).
 fn parse_sequence(
     tokens: &[Token],
     cursor: &mut usize,
     end: Option<&Token>,
+    depth: usize,
 ) -> Result<Vec<PsObject>> {
     let mut out = Vec::new();
     while *cursor < tokens.len() {
@@ -91,13 +101,23 @@ fn parse_sequence(
         match tok {
             Token::ProcStart => {
                 *cursor += 1;
-                let body = parse_sequence(tokens, cursor, Some(&Token::ProcEnd))?;
+                if depth + 1 > MAX_PARSE_DEPTH {
+                    return Err(PsError::Parse(format!(
+                        "delimiter nesting exceeds limit of {MAX_PARSE_DEPTH}"
+                    )));
+                }
+                let body = parse_sequence(tokens, cursor, Some(&Token::ProcEnd), depth + 1)?;
                 *cursor += 1; // consume ProcEnd
                 out.push(PsObject::Array(body));
             }
             Token::ArrayStart => {
                 *cursor += 1;
-                let body = parse_sequence(tokens, cursor, Some(&Token::ArrayEnd))?;
+                if depth + 1 > MAX_PARSE_DEPTH {
+                    return Err(PsError::Parse(format!(
+                        "delimiter nesting exceeds limit of {MAX_PARSE_DEPTH}"
+                    )));
+                }
+                let body = parse_sequence(tokens, cursor, Some(&Token::ArrayEnd), depth + 1)?;
                 *cursor += 1; // consume ArrayEnd
                 out.push(PsObject::Array(body));
             }
@@ -167,6 +187,14 @@ mod tests {
     fn unbalanced_procedure_errors() {
         assert!(parse("{ moveto").is_err());
         assert!(parse("moveto }").is_err());
+    }
+
+    #[test]
+    fn deeply_nested_array_is_rejected() {
+        // Nesting far beyond MAX_PARSE_DEPTH must fail closed rather than
+        // overflow the stack during recursive parsing (Phase 10).
+        let src = "[".repeat(MAX_PARSE_DEPTH + 5);
+        assert!(parse(&src).is_err());
     }
 
     #[test]

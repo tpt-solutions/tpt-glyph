@@ -8,3 +8,6 @@
 
 #[cfg(feature = "raqote-backend")]
 pub mod raqote;
+
+#[cfg(feature = "wgpu-backend")]
+pub mod wgpu;
