@@ -11,6 +11,7 @@
 use rayon::prelude::*;
 use tpt_glyph_core::canvas::Canvas;
 use tpt_glyph_core::graphics_state::GraphicsState;
+use tpt_glyph_core::render::DebugRasterizer;
 use tpt_glyph_pdf::PdfDocument;
 
 /// Locate the `multipage-4.pdf` fixture shipped in the repo's fixture corpus.
@@ -48,7 +49,8 @@ fn renders_all_pages_sequentially() {
     assert_eq!(doc.page_count(), 4);
     let mut last: Option<(u8, u8, u8)> = None;
     for i in 0..doc.page_count() {
-        let canvas = tpt_glyph_pdf::render_page(&doc, i, GraphicsState::new()).unwrap();
+        let canvas =
+            tpt_glyph_pdf::render_page(&doc, i, GraphicsState::new(), &DebugRasterizer).unwrap();
         let color = dominant_color(&canvas);
         // Every page must render a visible (non-white) colored rectangle.
         assert!(color != (255, 255, 255), "page {i} rendered empty/white");
@@ -78,7 +80,9 @@ fn concurrent_render_is_deterministic_and_leak_free() {
         .map(|_| {
             (0..count)
                 .map(|i| {
-                    let canvas = tpt_glyph_pdf::render_page(&doc, i, GraphicsState::new()).unwrap();
+                    let canvas =
+                        tpt_glyph_pdf::render_page(&doc, i, GraphicsState::new(), &DebugRasterizer)
+                            .unwrap();
                     dominant_color(&canvas)
                 })
                 .collect::<Vec<_>>()

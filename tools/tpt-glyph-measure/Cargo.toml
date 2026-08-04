@@ -1,5 +1,5 @@
 [package]
-name = "tpt-glyph-diag"
+name = "tpt-glyph-measure"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -7,23 +7,20 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "AI-assisted diagnostic tooling for TPT Glyph, built on the rendering knowledge graph."
+description = "Scaled line-measurement CLI: reports real-world lengths of PDF page geometry given a per-page drawing scale (e.g. 1:100, 1/4in=1ft)."
 
 [[bin]]
-name = "tpt-glyph-diag"
+name = "tpt-glyph-measure"
 path = "src/main.rs"
 
 [dependencies]
-tpt-glyph-core.workspace = true
-tpt-glyph-kg.workspace = true
 tpt-glyph-pdf-ir = { workspace = true, features = ["std"] }
 tpt-glyph-pdf-parser.workspace = true
-tpt-glyph-diff = { path = "../../tools/tpt-glyph-diff", version = "0.1.0" }
+tpt-glyph-pdf-measure.workspace = true
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
 
 [dev-dependencies]
+tpt-glyph-pdf-writer.workspace = true

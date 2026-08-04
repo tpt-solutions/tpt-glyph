@@ -2684,8 +2684,11 @@ dependencies = [
  "clap",
  "rayon",
  "tpt-glyph-core",
+ "tpt-glyph-font",
  "tpt-glyph-kg",
+ "tpt-glyph-math",
  "tpt-glyph-pdf",
+ "tpt-glyph-pdf-writer",
  "tpt-glyph-ps",
  "tracing",
  "tracing-subscriber",
@@ -2715,6 +2718,8 @@ dependencies = [
  "tpt-glyph-core",
  "tpt-glyph-diff",
  "tpt-glyph-kg",
+ "tpt-glyph-pdf-ir",
+ "tpt-glyph-pdf-parser",
  "tracing",
  "tracing-subscriber",
 ]
@@ -2766,6 +2771,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-glyph-measure"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "serde",
+ "serde_json",
+ "tpt-glyph-pdf-ir",
+ "tpt-glyph-pdf-measure",
+ "tpt-glyph-pdf-parser",
+ "tpt-glyph-pdf-writer",
+]
+
+[[package]]
 name = "tpt-glyph-pdf"
 version = "0.1.0"
 dependencies = [
@@ -2777,10 +2796,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-glyph-pdf-editor"
+version = "0.1.0"
+dependencies = [
+ "tpt-glyph-pdf-ir",
+ "tpt-glyph-pdf-parser",
+ "tpt-glyph-pdf-writer",
+]
+
+[[package]]
 name = "tpt-glyph-pdf-ir"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "tpt-glyph-pdf-measure"
+version = "0.1.0"
+dependencies = [
+ "tpt-glyph-font",
+ "tpt-glyph-pdf-ir",
 ]
 
 [[package]]
@@ -2810,6 +2846,15 @@ dependencies = [
  "tpt-glyph-core",
  "tpt-glyph-kg",
  "tracing",
+]
+
+[[package]]
+name = "tpt-glyph-typeset"
+version = "0.1.0"
+dependencies = [
+ "tpt-glyph-core",
+ "tpt-glyph-font",
+ "tpt-glyph-math",
 ]
 
 [[package]]

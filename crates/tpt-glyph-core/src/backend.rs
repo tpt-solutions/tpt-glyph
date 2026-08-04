@@ -90,6 +90,13 @@ impl SelectedBackend {
     pub fn rasterize(&self, tree: &RenderTree) -> Result<Canvas> {
         self.rasterizer.rasterize(tree)
     }
+
+    /// Borrow the resolved backend as a `&dyn Rasterizer`, for callers (e.g.
+    /// `tpt-glyph-pdf::render_page`) that take the rasterizer as a parameter
+    /// instead of owning a `SelectedBackend` themselves.
+    pub fn as_rasterizer(&self) -> &dyn Rasterizer {
+        self.rasterizer.as_ref()
+    }
 }
 
 /// Convenience: rasterize a tree with the auto-selected backend.

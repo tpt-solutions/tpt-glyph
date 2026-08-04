@@ -203,18 +203,29 @@ impl Writer {
         let mut container_offsets: Vec<(u32, u64)> = Vec::new();
         for (container_num, stream) in &containers {
             let offset = out.len() as u64;
-            write_object(out, *container_num, 0, |buf| write_stream_payload(buf, stream))?;
+            write_object(out, *container_num, 0, |buf| {
+                write_stream_payload(buf, stream)
+            })?;
             container_offsets.push((*container_num, offset));
         }
 
         // XRef rows, in object-number order.
         let size = self.objects.len() + 1 + containers.len();
         let mut entries: Vec<(u32, XrefEntry)> = Vec::with_capacity(size);
-        entries.push((0, XrefEntry::Free { next: 0, gen: 65535 }));
+        entries.push((
+            0,
+            XrefEntry::Free {
+                next: 0,
+                gen: 65535,
+            },
+        ));
         for (idx, mode) in packing.iter().enumerate() {
             let num = idx as u32 + 1;
             let entry = match mode {
-                XrefMode::Free => XrefEntry::Free { next: 0, gen: 65535 },
+                XrefMode::Free => XrefEntry::Free {
+                    next: 0,
+                    gen: 65535,
+                },
                 XrefMode::TopLevel => {
                     let offset = offsets[idx].ok_or(WriteError::UndefinedObject { num })?;
                     XrefEntry::TopLevel { offset, gen: 0 }
@@ -312,7 +323,10 @@ impl Writer {
             };
             packing.push(mode);
         }
-        debug_assert_eq!(container_num, self.objects.len() as u32 + 1 + container_count as u32);
+        debug_assert_eq!(
+            container_num,
+            self.objects.len() as u32 + 1 + container_count as u32
+        );
         packing
     }
 }
@@ -325,7 +339,12 @@ impl Default for Writer {
 
 /// Write `{num} {gen} obj\n<body>\nendobj\n`, calling `body` once between the
 /// object header and the trailer.
-fn write_object(out: &mut Vec<u8>, num: u32, gen: u16, body: impl FnOnce(&mut Vec<u8>) -> Result<()>) -> Result<()> {
+fn write_object(
+    out: &mut Vec<u8>,
+    num: u32,
+    gen: u16,
+    body: impl FnOnce(&mut Vec<u8>) -> Result<()>,
+) -> Result<()> {
     out.extend_from_slice(format!("{num} {gen} obj\n").as_bytes());
     body(out)?;
     out.extend_from_slice(b"\nendobj\n");
@@ -388,7 +407,10 @@ fn build_containers(
         let dict = vec![
             ("Type".into(), Value::Name("ObjStm".into())),
             ("N".into(), Value::Integer(items.len() as i64)),
-            ("First".into(), Value::Integer(streams_first_offset(&data) as i64)),
+            (
+                "First".into(),
+                Value::Integer(streams_first_offset(&data) as i64),
+            ),
         ];
         containers.push((
             container_num,
@@ -405,7 +427,10 @@ fn build_containers(
 /// The byte offset of the first object within an object-stream payload (i.e.
 /// end of the header line including its newline).
 fn streams_first_offset(data: &[u8]) -> usize {
-    data.iter().position(|&b| b == b'\n').map(|p| p + 1).unwrap_or(data.len())
+    data.iter()
+        .position(|&b| b == b'\n')
+        .map(|p| p + 1)
+        .unwrap_or(data.len())
 }
 
 /// Serialize packed objects into the raw object-stream payload: a header of
@@ -453,7 +478,8 @@ fn deflate(data: &[u8]) -> Vec<u8> {
 
     let mut enc = ZlibEncoder::new(Vec::new(), Compression::default());
     enc.write_all(data).expect("writing into a Vec cannot fail");
-    enc.finish().expect("finishing a Vec-backed encoder cannot fail")
+    enc.finish()
+        .expect("finishing a Vec-backed encoder cannot fail")
 }
 
 /// Write the XRef table (`xref`, subsections, rows) followed by nothing —
@@ -466,11 +492,17 @@ fn write_xref(out: &mut Vec<u8>, entries: &[(u32, XrefEntry)]) -> Result<()> {
             XrefEntry::Free { next, gen } => format!("{next:010} {gen:05} f \n"),
             XrefEntry::TopLevel { offset, gen } => {
                 if *offset >= 10_000_000_000 {
-                    return Err(WriteError::XrefFieldTooLarge { what: "offset", value: *offset });
+                    return Err(WriteError::XrefFieldTooLarge {
+                        what: "offset",
+                        value: *offset,
+                    });
                 }
                 format!("{offset:010} {gen:05} n \n")
             }
-            XrefEntry::Packed { container_num, index } => format!("{container_num:010} {index:05} n \n"),
+            XrefEntry::Packed {
+                container_num,
+                index,
+            } => format!("{container_num:010} {index:05} n \n"),
         };
         out.extend_from_slice(line.as_bytes());
     }
@@ -549,7 +581,11 @@ mod tests {
             .position(|w| w == b"startxref")
             .expect("startxref present");
         let num_start = startxref_pos + 9;
-        let num_start = num_start + bytes[num_start..].iter().position(|b| b.is_ascii_digit()).expect("offset digits present");
+        let num_start = num_start
+            + bytes[num_start..]
+                .iter()
+                .position(|b| b.is_ascii_digit())
+                .expect("offset digits present");
         let num_end = bytes[num_start..]
             .iter()
             .position(|b| !b.is_ascii_digit())
@@ -578,7 +614,7 @@ mod tests {
         let text = String::from_utf8_lossy(&bytes);
         assert!(text.contains("/Type /ObjStm"), "no ObjStm emitted");
         assert_eq!(text.matches("/Type /ObjStm").count(), 3); // ceil(6/2) = 3 containers
-        // No top-level `N obj` for the packed objects (only containers + root).
+                                                              // No top-level `N obj` for the packed objects (only containers + root).
         assert!(text.contains("7 0 obj")); // root catalog
     }
 
@@ -618,7 +654,9 @@ mod tests {
         ]);
         let bytes = w.finish().unwrap();
         let text = String::from_utf8_lossy(&bytes);
-        assert!(text.contains("/ID [<0123456789ABCDEF0123456789ABCDEF> <FEDCBA9876543210FEDCBA9876543210>]"));
+        assert!(text.contains(
+            "/ID [<0123456789ABCDEF0123456789ABCDEF> <FEDCBA9876543210FEDCBA9876543210>]"
+        ));
     }
 
     #[test]

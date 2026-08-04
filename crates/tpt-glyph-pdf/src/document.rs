@@ -14,7 +14,7 @@ use pdf::object::*;
 use tpt_glyph_core::canvas::Canvas;
 use tpt_glyph_core::document::Page;
 use tpt_glyph_core::graphics_state::GraphicsState;
-use tpt_glyph_core::render::{DebugRasterizer, Rasterizer, RenderTree};
+use tpt_glyph_core::render::{Rasterizer, RenderTree};
 
 /// Concrete `File` type used by this crate: in-memory backend with no caches.
 type PdfFile = File<Vec<u8>, NoCache, NoCache, NoLog>;
@@ -91,9 +91,13 @@ pub struct PdfPageInfo {
 impl PdfPageInfo {
     /// Render this page into a `RenderTree` using `state` as the initial
     /// graphics state. `resolver` resolves indirectly-referenced fonts/XObjects.
+    ///
+    /// The page's y-up content-stream coordinates are flipped into the
+    /// canvas's row-major, y-down pixel space before any of the page's own
+    /// operators run (see `GraphicsState::with_page_flip`).
     pub fn render(&self, state: GraphicsState, resolver: &impl Resolve) -> RenderTree {
         let mut tree = RenderTree::new(self.width, self.height);
-        let mut gstate = state;
+        let mut gstate = state.with_page_flip(self.height as f64);
         let mut tstate = TextState::default();
         let mut path = tpt_glyph_core::geometry::Path::new();
         render_ops(
@@ -109,8 +113,15 @@ impl PdfPageInfo {
     }
 }
 
-/// Render a single page of an already-parsed document to a `Canvas`.
-pub fn render_page(doc: &PdfDocument, index: usize, state: GraphicsState) -> Result<Canvas> {
+/// Render a single page of an already-parsed document to a `Canvas` using
+/// `rasterizer` (e.g. `SelectedBackend::as_rasterizer()` to honor the
+/// caller's chosen backend).
+pub fn render_page(
+    doc: &PdfDocument,
+    index: usize,
+    state: GraphicsState,
+    rasterizer: &dyn Rasterizer,
+) -> Result<Canvas> {
     let pages = doc.pages()?;
     let resolver = doc.file.resolver();
     let info = pages
@@ -118,13 +129,16 @@ pub fn render_page(doc: &PdfDocument, index: usize, state: GraphicsState) -> Res
         .find(|p| p.index == index)
         .ok_or_else(|| PdfError::PageNotFound(index, doc.page_count()))?;
     let tree = info.render(state, &resolver);
-    DebugRasterizer
+    rasterizer
         .rasterize(&tree)
         .map_err(|e| PdfError::Parse(format!("rasterize error: {e}")))
 }
 
-/// Render every page of a document into a `Document`.
-pub fn render_document(doc: &PdfDocument) -> Result<tpt_glyph_core::document::Document> {
+/// Render every page of a document into a `Document` using `rasterizer`.
+pub fn render_document(
+    doc: &PdfDocument,
+    rasterizer: &dyn Rasterizer,
+) -> Result<tpt_glyph_core::document::Document> {
     if doc.page_count() == 0 {
         return Err(PdfError::EmptyDocument);
     }
@@ -134,7 +148,7 @@ pub fn render_document(doc: &PdfDocument) -> Result<tpt_glyph_core::document::Do
         .into_iter()
         .map(|info| {
             let tree = info.render(GraphicsState::new(), &resolver);
-            let canvas: Canvas = DebugRasterizer.rasterize(&tree).expect("rasterize");
+            let canvas: Canvas = rasterizer.rasterize(&tree).expect("rasterize");
             Page::new(info.index, canvas)
         })
         .collect();
@@ -144,6 +158,7 @@ pub fn render_document(doc: &PdfDocument) -> Result<tpt_glyph_core::document::Do
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tpt_glyph_core::render::DebugRasterizer;
 
     /// Build a minimal but spec-valid one-page PDF (correct xref offsets) with a
     /// filled rectangle, a stroked line, and a text show. Used to exercise the
@@ -205,7 +220,7 @@ mod tests {
     #[test]
     fn renders_non_empty_tree() {
         let doc = PdfDocument::from_bytes(sample_pdf()).unwrap();
-        let canvas = render_page(&doc, 0, GraphicsState::new()).unwrap();
+        let canvas = render_page(&doc, 0, GraphicsState::new(), &DebugRasterizer).unwrap();
         assert_eq!(canvas.len(), 200 * 200);
         // The filled rectangle + stroked line + text boxes must produce output.
         assert!(canvas
@@ -242,6 +257,6 @@ mod tests {
         );
         let doc = PdfDocument::from_bytes(body).unwrap();
         assert_eq!(doc.page_count(), 0);
-        assert!(render_document(&doc).is_err());
+        assert!(render_document(&doc, &DebugRasterizer).is_err());
     }
 }

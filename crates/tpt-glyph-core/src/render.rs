@@ -114,8 +114,10 @@ impl RenderTree {
 /// Backend-agnostic rasterizer: turns a `RenderTree` into a `Canvas`.
 ///
 /// Implementors (wgpu in Phase 6, raqote in Phase 6) must not require any global
-/// state, preserving thread-safe concurrent page rendering.
-pub trait Rasterizer {
+/// state, preserving thread-safe concurrent page rendering. The `Send + Sync`
+/// bound lets a `Box<dyn Rasterizer>` (see `backend::SelectedBackend`) be
+/// shared by reference across a `rayon` thread pool.
+pub trait Rasterizer: Send + Sync {
     fn rasterize(&self, tree: &RenderTree) -> Result<Canvas>;
 }
 

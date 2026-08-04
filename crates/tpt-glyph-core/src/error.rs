@@ -15,8 +15,14 @@ use core::fmt;
 /// Errors produced by the tpt-glyph-core engine.
 #[derive(Debug)]
 pub enum GlyphError {
-    InvalidDimensions { width: u32, height: u32 },
-    PageOutOfRange { index: usize, count: usize },
+    InvalidDimensions {
+        width: u32,
+        height: u32,
+    },
+    PageOutOfRange {
+        index: usize,
+        count: usize,
+    },
     Unsupported(&'static str),
     StateStackUnderflow,
     OperandStackUnderflow,
@@ -35,7 +41,10 @@ impl fmt::Display for GlyphError {
                 write!(f, "invalid dimensions: {width}x{height}")
             }
             GlyphError::PageOutOfRange { index, count } => {
-                write!(f, "page index out of range: {index} (document has {count} pages)")
+                write!(
+                    f,
+                    "page index out of range: {index} (document has {count} pages)"
+                )
             }
             GlyphError::Unsupported(msg) => write!(f, "unsupported feature: {msg}"),
             GlyphError::StateStackUnderflow => write!(f, "graphics state stack underflow"),

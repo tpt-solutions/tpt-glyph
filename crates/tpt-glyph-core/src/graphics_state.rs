@@ -115,6 +115,24 @@ impl GraphicsState {
         Self::default()
     }
 
+    /// The initial graphics state for a page of `height` device-space units.
+    pub fn for_page(height: f64) -> Self {
+        Self::new().with_page_flip(height)
+    }
+
+    /// Compose the page-to-canvas y-flip onto this state's CTM, returning a
+    /// new state.
+    ///
+    /// PDF/PostScript user space has its origin at the bottom-left with y
+    /// increasing upward; [`crate::canvas::Canvas`] is row-major with the
+    /// top-left pixel at index 0 (y increasing downward). This composes that
+    /// flip as the innermost transform (applied first), so it maps a page's
+    /// own content-stream coordinates into canvas space before any
+    /// caller-supplied CTM or subsequent `cm`/`concat` transforms apply.
+    pub fn with_page_flip(self, height: f64) -> Self {
+        self.concat_transform(&Transform::new(1.0, 0.0, 0.0, -1.0, 0.0, height))
+    }
+
     /// Set the stroke color, returning a new state (does not mutate `self`).
     pub fn with_stroke_color(mut self, color: RgbColor) -> Self {
         self.stroke_color = color.clamped();
@@ -147,9 +165,12 @@ impl GraphicsState {
 
     /// Concatenate a user-space transform onto the CTM, returning a new state.
     ///
-    /// The new transform is `ctm ∘ m`, matching PostScript `concat` semantics.
+    /// `m` describes the new (innermost) user space in terms of the current
+    /// one, so it must be applied *before* the existing CTM: the new CTM is
+    /// `m ∘ ctm` (apply `m` first, then the old CTM), matching the PDF/PostScript
+    /// `cm`/`concat` rule `CTM' = M × CTM`.
     pub fn concat_transform(mut self, m: &Transform) -> Self {
-        self.ctm = self.ctm.concat(m);
+        self.ctm = m.concat(&self.ctm);
         self
     }
 
@@ -195,6 +216,23 @@ mod tests {
             GraphicsState::new().concat_transform(&Transform::new(1.0, 0.0, 0.0, 1.0, 100.0, 50.0));
         let p = s.to_device(Point::new(10.0, 20.0));
         assert_eq!(p, Point::new(110.0, 70.0));
+    }
+
+    #[test]
+    fn nested_concat_applies_innermost_transform_first() {
+        // A non-identity base CTM makes composition order observable: `CTM' = M
+        // × CTM` means a point in the newest (innermost) user space is mapped by
+        // `m` *before* the pre-existing CTM, not after.
+        //
+        // Base: translate by (100, 0). Then `cm`-concat a 2x scale. A point at
+        // the new origin (0, 0) must land at device (100, 0): scaled first
+        // (stays at the origin), then translated by the base — NOT translated
+        // first then scaled (which would incorrectly give (200, 0)).
+        let base =
+            GraphicsState::new().concat_transform(&Transform::new(1.0, 0.0, 0.0, 1.0, 100.0, 0.0));
+        let nested = base.concat_transform(&Transform::new(2.0, 0.0, 0.0, 2.0, 0.0, 0.0));
+        let p = nested.to_device(Point::new(0.0, 0.0));
+        assert_eq!(p, Point::new(100.0, 0.0));
     }
 
     #[test]

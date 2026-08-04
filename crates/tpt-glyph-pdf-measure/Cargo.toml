@@ -1,0 +1,16 @@
+[package]
+name = "tpt-glyph-pdf-measure"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Geometry and text-metric measurement over the TPT Glyph PDF IR: bounding boxes, path lengths, ink-coverage estimation, and font-based text metrics."
+keywords = ["pdf", "measure", "metrics", "geometry", "typography"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+tpt-glyph-pdf-ir = { workspace = true, features = ["std"] }
+tpt-glyph-font = { workspace = true, features = ["std"] }

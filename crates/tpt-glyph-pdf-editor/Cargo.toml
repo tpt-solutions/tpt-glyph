@@ -1,0 +1,17 @@
+[package]
+name = "tpt-glyph-pdf-editor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Transactional, functional-style editing of PDF documents: replace text, insert images, and save via tpt-glyph-pdf-writer."
+keywords = ["pdf", "editor", "edit", "document", "transactional"]
+categories = ["text-processing", "graphics"]
+
+[dependencies]
+tpt-glyph-pdf-ir = { workspace = true, features = ["std"] }
+tpt-glyph-pdf-writer.workspace = true
+tpt-glyph-pdf-parser.workspace = true

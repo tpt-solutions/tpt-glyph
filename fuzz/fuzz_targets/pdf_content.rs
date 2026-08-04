@@ -35,5 +35,10 @@ fuzz_target!(|data: &[u8]| {
         return;
     }
     // Rasterize must not panic/hang/OOM on adversarial content.
-    let _ = tpt_glyph_pdf::render_page(&doc, 0, tpt_glyph_core::graphics_state::GraphicsState::new());
+    let _ = tpt_glyph_pdf::render_page(
+        &doc,
+        0,
+        tpt_glyph_core::graphics_state::GraphicsState::new(),
+        &tpt_glyph_core::render::DebugRasterizer,
+    );
 });

@@ -8,6 +8,8 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use tpt_glyph_core::backend::Backend;
 
+mod mathdemo;
+
 #[derive(Parser)]
 #[command(
     name = "tpt-glyph",
@@ -73,6 +75,30 @@ enum Command {
         #[arg(long)]
         parallel: bool,
     },
+    /// Typeset a LaTeX math expression into a standalone one-page PDF.
+    ///
+    /// Glyphs and fraction bars are laid out via the TeXbook Ch. 17 algorithm
+    /// (`tpt-glyph-math`) and emitted as filled vector paths directly into the
+    /// PDF content stream (`tpt-glyph-pdf-writer`), so the output needs no
+    /// embedded font resource.
+    Math {
+        /// Path to a `.math` file containing a LaTeX math string. Omit if
+        /// `--latex` is given instead.
+        input: Option<std::path::PathBuf>,
+        /// Inline LaTeX math string, e.g. `--latex "\frac{x}{y^2}"`. Takes
+        /// precedence over `input` if both are given.
+        #[arg(long)]
+        latex: Option<String>,
+        /// Output PDF path.
+        #[arg(long, short = 'o')]
+        output: std::path::PathBuf,
+        /// TTF/OTF font used for glyph outlines.
+        #[arg(long)]
+        font: std::path::PathBuf,
+        /// Font size in points.
+        #[arg(long, default_value_t = 36.0)]
+        size: f64,
+    },
     /// Print version and build information.
     Version,
 }
@@ -127,6 +153,7 @@ fn main() -> anyhow::Result<()> {
                                 &doc,
                                 idx,
                                 tpt_glyph_core::graphics_state::GraphicsState::new(),
+                                backend.as_rasterizer(),
                             )
                             .map_err(|e| {
                                 anyhow::anyhow!("render error on page {}: {e}", idx + 1)
@@ -142,6 +169,7 @@ fn main() -> anyhow::Result<()> {
                                 &doc,
                                 idx,
                                 tpt_glyph_core::graphics_state::GraphicsState::new(),
+                                backend.as_rasterizer(),
                             )
                             .map_err(|e| {
                                 anyhow::anyhow!("render error on page {}: {e}", idx + 1)
@@ -205,6 +233,37 @@ fn main() -> anyhow::Result<()> {
                 );
                 Ok(())
             }
+        }
+        Command::Math {
+            input,
+            latex,
+            output,
+            font,
+            size,
+        } => {
+            let source = match latex {
+                Some(s) => s,
+                None => {
+                    let path = input.ok_or_else(|| {
+                        anyhow::anyhow!("provide a .math file path or --latex STRING")
+                    })?;
+                    std::fs::read_to_string(&path)
+                        .map_err(|e| anyhow::anyhow!("failed to read {}: {e}", path.display()))?
+                }
+            };
+            let expr = tpt_glyph_math::latex::parse(source.trim())
+                .map_err(|e| anyhow::anyhow!("failed to parse math expression: {e}"))?;
+
+            let font_data = std::fs::read(&font)
+                .map_err(|e| anyhow::anyhow!("failed to read font {}: {e}", font.display()))?;
+            let font = tpt_glyph_font::Font::from_bytes(&font_data)
+                .ok_or_else(|| anyhow::anyhow!("{}: not a valid TTF/OTF font", font.display()))?;
+
+            let bytes = mathdemo::render_math_to_pdf(&expr, &font, size);
+            std::fs::write(&output, &bytes)
+                .map_err(|e| anyhow::anyhow!("failed to write {}: {e}", output.display()))?;
+            println!("typeset -> {}", output.display());
+            Ok(())
         }
         Command::Version => {
             println!("tpt-glyph {}", env!("CARGO_PKG_VERSION"));

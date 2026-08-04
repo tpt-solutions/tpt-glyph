@@ -228,7 +228,7 @@ above and are additive scope, not replacements for Phases 0–11.
 - [x] Create `tpt-glyph-font` crate (wraps `ttf-parser`: TTF/OTF metric parsing, glyph outlining, kerning)
 - [x] Design `tpt-glyph-pdf-ir` data structures (Pages, Content Streams, Resources, XRef) as the canonical immutable PDF IR
 - [x] Reconcile existing `tpt-glyph-pdf` crate with the new `tpt-glyph-pdf-parser` / `tpt-glyph-pdf-ir` split (naming/migration decision)
-- [ ] Add `no_std` (+ `alloc`) compatibility groundwork for `tpt-glyph-core`
+- [x] Add `no_std` (+ `alloc`) compatibility groundwork for `tpt-glyph-core`
 - [ ] Publish `tpt-glyph-core` and `tpt-glyph-font` to crates.io as v0.1.0
 
 ## Phase 13 — Math Typesetting Engine (`tpt-glyph-math`)
@@ -240,7 +240,7 @@ above and are additive scope, not replacements for Phases 0–11.
 - [x] Implement axis-height / rule-thickness calculation from the current font's x-height
 - [x] Emit laid-out math AST as `tpt-glyph-core` draw commands (glyph placement, vector fraction bars)
 - [x] Add optional `latex-parser` feature: pest-based LaTeX math string → `MathExpr` AST parser
-- [ ] Build CLI demo: `.math` file or LaTeX string → typeset PDF via `tpt-glyph-core` + `tpt-glyph-pdf-writer`
+- [x] Build CLI demo: `.math` file or LaTeX string → typeset PDF via `tpt-glyph-core` + `tpt-glyph-pdf-writer`
 - [ ] Publish `tpt-glyph-math` to crates.io
 
 Phase 13 complete except the two items above, deferred by design: the CLI
@@ -271,32 +271,107 @@ in every combination.
 
 ## Phase 14 — Full PDF Lifecycle: Write, Edit, Measure
 
-- [ ] Build `tpt-glyph-pdf-writer`: dependency-free (except `flate2`), zero-allocation PDF object serialization, XRef/object-ID management, standard + compressed object streams
-- [ ] Complete `tpt-glyph-pdf-parser` to fully populate `tpt-glyph-pdf-ir`
-- [ ] Build `tpt-glyph-pdf-measure`: text metrics (advance widths, ascents/descents via `tpt-glyph-font`, including embedded font subsets), geometric bounding boxes, ink-coverage estimation
-- [ ] Build `tpt-glyph-pdf-editor`: transactional IR-mutation API (`Editor::load`, `replace_text`, `insert_image`, `save` with garbage collection of unused objects)
-- [ ] Integrate `tpt-glyph-diag` to flag corrupted/non-standard PDF structures during parsing
+- [x] Build `tpt-glyph-pdf-writer`: dependency-free (except `flate2`), zero-allocation PDF object serialization, XRef/object-ID management, standard + compressed object streams
+- [x] Complete `tpt-glyph-pdf-parser` to fully populate `tpt-glyph-pdf-ir`
+- [x] Build `tpt-glyph-pdf-measure`: text metrics (advance widths, ascents/descents via `tpt-glyph-font`, including embedded font subsets), geometric bounding boxes, ink-coverage estimation
+- [x] Build `tpt-glyph-pdf-editor`: transactional IR-mutation API (`Editor::load`, `replace_text`, `insert_image`, `save` with garbage collection of unused objects)
+- [x] Integrate `tpt-glyph-diag` to flag corrupted/non-standard PDF structures during parsing
 
 ## Phase 15 — High-Level Typesetting Suite
 
-- [ ] Build `tpt-glyph-typeset`: paragraph layout, pagination, page breaks
-- [ ] Integrate `tpt-glyph-math` into `tpt-glyph-typeset` document flow
+- [x] Build `tpt-glyph-typeset`: paragraph layout, pagination, page breaks
+- [x] Integrate `tpt-glyph-math` into `tpt-glyph-typeset` document flow
 - [ ] Release `tpt-glyph` v2.0.0 as a unified, documented workspace
 
 ## Phase 16 — Scaled Line-Measurement Tool
 
-- [ ] Design a per-page drawing-scale specification (e.g. `1:100`, `1/4"=1'-0"`), suppliable via CLI flag or config file and keyed by page number
-- [ ] Build `tools/tpt-glyph-measure`: standalone CLI that opens a PDF/PS page and reports the geometric length (in PDF units) of a given line/path, reusing `tpt-glyph-pdf-measure`'s geometry primitives (Phase 14)
-- [ ] Apply the page's scale factor to convert a measured length into real-world units, supporting documents where different pages use different scales
-- [ ] Support common scale conventions (architectural feet-inches ratios, engineering ratios like `1:50`) and common target units (mm/cm/m, in/ft)
-- [ ] Add unit tests: known geometry + scale → expected real-world length, including a mixed-scale multi-page fixture
-- [ ] Document the tool's usage (CLI flags, scale-spec format, worked example) in `docs/`
+- [x] Design a per-page drawing-scale specification (e.g. `1:100`, `1/4"=1'-0"`), suppliable via CLI flag or config file and keyed by page number
+- [x] Build `tools/tpt-glyph-measure`: standalone CLI that opens a PDF/PS page and reports the geometric length (in PDF units) of a given line/path, reusing `tpt-glyph-pdf-measure`'s geometry primitives (Phase 14)
+- [x] Apply the page's scale factor to convert a measured length into real-world units, supporting documents where different pages use different scales
+- [x] Support common scale conventions (architectural feet-inches ratios, engineering ratios like `1:50`) and common target units (mm/cm/m, in/ft)
+- [x] Add unit tests: known geometry + scale → expected real-world length, including a mixed-scale multi-page fixture
+- [x] Document the tool's usage (CLI flags, scale-spec format, worked example) in `docs/`
+
+Note: PDF input only — see `docs/measure.md`'s Limitations section for why
+PostScript isn't supported (no PS equivalent of `tpt-glyph-pdf-ir` exists).
 
 ## Cross-cutting (v2.0 crates.io & reuse goals)
 
-- [ ] Ensure `tpt-glyph-core`, `tpt-glyph-pdf-ir`, and `tpt-glyph-math` are `no_std` (+ `alloc`) compatible for WASM/embedded use
+- [x] Ensure `tpt-glyph-core`, `tpt-glyph-pdf-ir`, and `tpt-glyph-math` are `no_std` (+ `alloc`) compatible for WASM/embedded use
 - [ ] Use trait-based abstractions (`Read`/`Write` or a custom `ResourceProvider`) instead of hardcoded file I/O across new crates
 - [ ] Add `#[doc = include_str!("../examples/...")]` compile-tested examples to public APIs ahead of docs.rs publication
 - [ ] (Long-term/exploratory) Investigate constraint-based layout in `tpt-glyph-typeset`, inspired by `tpt-telos`'s QF_LRA solver concepts
+
+---
+
+## Session Notes (2026-08-04)
+
+Reconciled the checklist against the actual codebase (it had drifted from the
+last two commits): Phase 12's `no_std` groundwork, the `tpt-glyph-pdf-writer`
+crate, and `tpt-glyph-pdf-parser` fully populating the IR were all already
+done but left unchecked. Fixed a real test bug found in the process: PDF page
+label roman-numeral conversion inverted lowercase/uppercase (`/S /r` produced
+`I` instead of `i`), plus a stale test fixture with a `/PageLabels` range that
+started past the document's page count.
+
+Built the Phase 13 CLI demo (`tpt-glyph math --latex "..." --font FONT.ttf -o
+out.pdf`, or a `.math` file path instead of `--latex`): typesets via
+`tpt-glyph-math::emit`, then a new `tpt-glyph-cli::mathdemo` module converts
+the resulting `RenderTree` directly into PDF path-fill content-stream
+operators (no font embedding needed, since glyphs are already vector
+outlines) and assembles a one-page PDF via `tpt-glyph-pdf-writer`.
+
+**While verifying that demo end-to-end, found and fixed four critical,
+previously-invisible bugs in the core rendering pipeline** — all masked
+because `tpt_glyph_pdf::render_page`/`render_document` were hardcoded to the
+`DebugRasterizer` placeholder and silently ignored the CLI's `--backend`
+flag entirely:
+
+1. **PDF rendering never used the selected backend.** `render_page`/
+   `render_document` now take an explicit `&dyn Rasterizer` parameter;
+   `tpt-glyph-cli` passes `SelectedBackend::as_rasterizer()`. Added
+   `Send + Sync` as a supertrait bound on `Rasterizer` (all implementors were
+   already trivially so) so a `SelectedBackend` can be shared by reference
+   across the `rayon` thread pool.
+2. **No y-flip between PDF/PostScript user space and canvas pixel space.**
+   Page content rendered upside-down/mirrored once a real rasterizer was
+   wired in. Added `GraphicsState::for_page`/`with_page_flip`, applied at the
+   start of PS interpretation (`Interpreter::with_limits`) and PDF page
+   rendering (`PdfPageInfo::render`).
+3. **`GraphicsState::concat_transform` composed matrices in the wrong
+   order** (`ctm.concat(m)` instead of `m.concat(&ctm)`) — backwards from the
+   PDF/PostScript `cm`/`concat` rule `CTM' = M × CTM`. Invisible in every
+   existing test because they only ever concatenated a single transform onto
+   an identity CTM, where order doesn't matter. Added a regression test
+   (`nested_concat_applies_innermost_transform_first`) with a non-identity
+   base CTM to make the ordering observable.
+4. **`op_lineto`/`op_rlineto` in the PostScript interpreter anchored every
+   segment of a multi-segment `lineto` chain to the subpath's original start
+   point** instead of the running pen position (a `let _end = ...` computed
+   the correct value and then discarded it). Mathematically this still drew
+   a "flat" degenerate Bézier per segment, so the reference software
+   rasterizer's flatness-based flattening accidentally emitted the correct
+   endpoint anyway — but `raqote` respects the (wrong) control points
+   directly, rendering multi-segment polylines/polygons as distorted blobs.
+   `tpt-glyph-pdf::content`'s equivalent path-building code was already
+   correct (uses `sp.segments.last().map(|b| b.end)`), so PDF rendering was
+   unaffected; only the PostScript path had this bug.
+
+All four were caught by actually looking at rendered PNG output (a red
+square built from `moveto`/`lineto`/`closepath`/`fill` rendered as a
+distorted comet shape near the top of the page instead of a clean square
+near the bottom) — the existing test suite's assertions (non-empty canvas,
+dominant-color-per-page) were too coarse to catch orientation or shape
+corruption. This calls into question how much signal the Phase 1 visual-diff
+harness has actually had for PDF fixtures historically, since it very likely
+exercised this same broken path; the final full harness run (Phase 11) will
+be the first meaningful one.
+
+Verification: `cargo test --workspace --all-features` (183 tests, all
+passing), `cargo clippy --workspace --all-targets --all-features -- -D
+warnings` (clean), `cargo fmt --all --check` (clean), plus manual visual
+verification of `fixtures/pdf/hello.pdf`, `fixtures/ps/shapes.ps`, and the
+new math CLI demo's output rendered through both the reference and raqote
+backends.
 
 

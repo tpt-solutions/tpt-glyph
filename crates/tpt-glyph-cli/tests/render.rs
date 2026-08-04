@@ -45,7 +45,8 @@ fn cli_renders_pdf_fixture() {
     let pdf = fixtures_dir().join("pdf/hello.pdf");
     let doc = PdfDocument::open_path(&pdf).expect("open pdf");
     assert_eq!(doc.page_count(), 1);
-    let canvas = tpt_glyph_pdf::render_page(&doc, 0, GraphicsState::new()).expect("render page");
+    let canvas = tpt_glyph_pdf::render_page(&doc, 0, GraphicsState::new(), &DebugRasterizer)
+        .expect("render page");
     assert_eq!((canvas.width, canvas.height), (200, 200));
     non_empty(&canvas);
 }

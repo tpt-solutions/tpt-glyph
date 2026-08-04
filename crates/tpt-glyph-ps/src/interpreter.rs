@@ -136,6 +136,9 @@ impl Interpreter {
             height,
             limits,
             tree: RenderTree::new(width, height),
+            // PostScript user space has its origin at the bottom-left with y
+            // increasing upward; the canvas is row-major, top-left origin.
+            state: GraphicsState::for_page(height as f64),
             ..Default::default()
         }
     }
@@ -309,8 +312,11 @@ fn op_lineto(i: &mut Interpreter) -> Result<()> {
     let x = require_number(&mut i.operands)?;
     let p = Point::new(x, y);
     if let Some(sp) = i.path.subpaths.last_mut() {
-        let start = sp.start;
-        let _end = sp.segments.last().map(|b| b.end).unwrap_or(start);
+        // The current pen position is the previous segment's end, or the
+        // subpath's own start if this is its first segment — NOT always
+        // `sp.start` (that would anchor every segment in a polyline back to
+        // the subpath's first point instead of chaining from the last one).
+        let start = sp.segments.last().map(|b| b.end).unwrap_or(sp.start);
         // A straight line is a degenerate Bézier with coincident control points.
         sp.segments.push(tpt_glyph_core::geometry::CubicBezier {
             start,
@@ -528,15 +534,16 @@ fn op_rmoveto(i: &mut Interpreter) -> Result<()> {
 fn op_rlineto(i: &mut Interpreter) -> Result<()> {
     let dy = require_number(&mut i.operands)?;
     let dx = require_number(&mut i.operands)?;
-    let (start, base) = if let Some(sp) = i.path.subpaths.last() {
-        let base = sp.segments.last().map(|b| b.end).unwrap_or(sp.start);
-        (sp.start, base)
+    // The current pen position (see `op_lineto`) is both the base the
+    // relative offset is measured from and the new segment's start.
+    let start = if let Some(sp) = i.path.subpaths.last() {
+        sp.segments.last().map(|b| b.end).unwrap_or(sp.start)
     } else {
         // Implied moveto to the origin, then relative line.
         i.path.subpaths.push(Subpath::new(Point::new(0.0, 0.0)));
-        (Point::new(0.0, 0.0), Point::new(0.0, 0.0))
+        Point::new(0.0, 0.0)
     };
-    let p = Point::new(base.x + dx, base.y + dy);
+    let p = Point::new(start.x + dx, start.y + dy);
     if let Some(sp) = i.path.subpaths.last_mut() {
         sp.segments.push(tpt_glyph_core::geometry::CubicBezier {
             start,
@@ -721,10 +728,12 @@ mod tests {
     fn rotate_compose_ctm() {
         let mut it = Interpreter::new(50, 50);
         it.run_source("90 rotate").unwrap();
-        // A point on the +x axis should map to +y after a 90° rotation.
+        // A point on the +x axis rotates to +y in user space (a 90° rotation
+        // takes (10, 0) to (0, 10)), and the page's initial CTM then flips user
+        // space (y-up) into device space (y-down): device_y = height - y.
         let p = it.state().to_device(Point::new(10.0, 0.0));
         assert!((p.x).abs() < 1e-9, "x should be ~0, got {}", p.x);
-        assert!((p.y - 10.0).abs() < 1e-9, "y should be ~10, got {}", p.y);
+        assert!((p.y - 40.0).abs() < 1e-9, "y should be ~40, got {}", p.y);
     }
 
     #[test]

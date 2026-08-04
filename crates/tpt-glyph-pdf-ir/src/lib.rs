@@ -72,6 +72,10 @@ impl Matrix {
         e: 0.0,
         f: 0.0,
     };
+
+    pub const fn new(a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) -> Self {
+        Self { a, b, c, d, e, f }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -307,6 +311,10 @@ pub struct FontRef {
     pub descriptor: Option<PdfValue>,
     pub to_unicode: Option<PdfValue>,
     pub encoding: Option<String>,
+    /// Raw embedded font program bytes (`FontFile`/`FontFile2`/`FontFile3`
+    /// from the font's `/FontDescriptor`), when the font is embedded rather
+    /// than referenced by name only.
+    pub embedded_font: Option<Vec<u8>>,
 }
 
 /// An external object (XObject) reference.

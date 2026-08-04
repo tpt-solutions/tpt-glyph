@@ -94,7 +94,10 @@ pub type Result<T> = core::result::Result<T, WriteError>;
 /// Append the `#xx`-escaped form of a name byte to `out`.
 pub(crate) fn escape_name_byte(out: &mut Vec<u8>, b: u8) {
     let safe = b.is_ascii_alphanumeric()
-        || matches!(b, b'!' | b'\'' | b'$' | b'&' | b'*' | b'+' | b'-' | b'.' | b'_' | b'|' | b'~');
+        || matches!(
+            b,
+            b'!' | b'\'' | b'$' | b'&' | b'*' | b'+' | b'-' | b'.' | b'_' | b'|' | b'~'
+        );
     if safe {
         out.push(b);
     } else {

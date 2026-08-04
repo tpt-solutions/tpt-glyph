@@ -14,6 +14,8 @@ use tpt_glyph_kg::{
     KnowledgeGraph,
 };
 
+mod lint;
+
 #[derive(Parser)]
 #[command(
     name = "tpt-glyph-diag",
@@ -45,6 +47,16 @@ enum Command {
     Diff {
         /// Path to a diff-report.json produced by tpt-glyph-diff.
         report: std::path::PathBuf,
+    },
+    /// Parse a PDF and flag corrupted or non-standard structure (Phase 14).
+    ///
+    /// Reports an outright parse failure directly; for a PDF that does
+    /// parse, runs structural lints (degenerate pages, unresolved xref
+    /// offsets, dangling resource references, ...) that tend to correlate
+    /// with a blank page or a silent misrender rather than a hard error.
+    Check {
+        /// Path to the PDF to check.
+        path: std::path::PathBuf,
     },
 }
 
@@ -185,6 +197,33 @@ fn main() -> anyhow::Result<()> {
                 println!("All fixtures pass (or are pending). No action required.");
             }
             Ok(())
+        }
+        Command::Check { path } => {
+            let doc = match tpt_glyph_pdf_parser::parse_path(&path) {
+                Ok(doc) => doc,
+                Err(e) => {
+                    println!("✗ failed to parse {}: {e}", path.display());
+                    std::process::exit(1);
+                }
+            };
+
+            let findings = lint::lint(&doc);
+            if findings.is_empty() {
+                println!(
+                    "OK: {} parsed with no structural issues found.",
+                    path.display()
+                );
+                return Ok(());
+            }
+
+            println!("{} finding(s) in {}:", findings.len(), path.display());
+            for f in &findings {
+                match f.page {
+                    Some(p) => println!("  - page {p}: {}", f.message),
+                    None => println!("  - {}", f.message),
+                }
+            }
+            std::process::exit(1);
         }
     }
 }

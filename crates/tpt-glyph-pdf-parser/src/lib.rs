@@ -16,8 +16,7 @@ use pdf::content::{LineCap as PdfLineCap, LineJoin as PdfLineJoin, Winding};
 use pdf::error::PdfError;
 use pdf::font::{FontData, FontType};
 use pdf::object::{
-    Annot as PdfAnnot, ColorSpace as PdfColorSpace, Counter, MaybeRef, Object, PageLabel,
-    Rectangle,
+    Annot as PdfAnnot, ColorSpace as PdfColorSpace, Counter, MaybeRef, Object, PageLabel, Rectangle,
 };
 use pdf::primitive::{Dictionary, Name, Primitive};
 
@@ -125,8 +124,7 @@ fn find_info_object_number(
         };
         let matches = signature.iter().all(|(key, expected)| {
             entries.iter().any(|(entry_key, entry_value)| {
-                entry_key == key
-                    && matches!(entry_value, ir::PdfValue::String(s) if s == expected)
+                entry_key == key && matches!(entry_value, ir::PdfValue::String(s) if s == expected)
             })
         });
         matches.then_some(num)
@@ -337,8 +335,8 @@ fn page_label(index: u32, ranges: &[PageLabelRange]) -> Option<String> {
         // relative to the PDF spec. A file `/S /r` (spec: lowercase roman)
         // parses to `Counter::RomanUpper`, so we render lower/upper here to
         // match what the spec actually means.
-        Some(Counter::RomanUpper) => to_roman(value),
-        Some(Counter::RomanLower) => to_roman(value).to_uppercase(),
+        Some(Counter::RomanUpper) => to_roman(value).to_lowercase(),
+        Some(Counter::RomanLower) => to_roman(value),
         Some(Counter::AlphaUpper) => to_alpha(value),
         Some(Counter::AlphaLower) => to_alpha(value).to_uppercase(),
     };
@@ -393,7 +391,7 @@ fn convert_annotations(
         Ok(annots) => annots
             .data()
             .iter()
-            .filter_map(|a| convert_annotation(a))
+            .filter_map(convert_annotation)
             .collect(),
         Err(_) => Vec::new(),
     }
@@ -401,7 +399,9 @@ fn convert_annotations(
 
 fn convert_annotation(a: &MaybeRef<PdfAnnot>) -> Option<ir::Annotation> {
     let ann = a.data();
-    let rect = ann.rect.map(|r| Rect::new(r.left as f64, r.bottom as f64, r.right as f64, r.top as f64));
+    let rect = ann
+        .rect
+        .map(|r| Rect::new(r.left as f64, r.bottom as f64, r.right as f64, r.top as f64));
     let subtype = name_str(&ann.subtype);
     let contents = ann
         .contents
@@ -421,7 +421,10 @@ fn convert_annotation(a: &MaybeRef<PdfAnnot>) -> Option<ir::Annotation> {
         value.push(("Rect".into(), r));
     }
     if let Some(c) = &ann.contents {
-        value.push(("Contents".into(), ir::PdfValue::String(c.as_bytes().to_vec())));
+        value.push((
+            "Contents".into(),
+            ir::PdfValue::String(c.as_bytes().to_vec()),
+        ));
     }
 
     Some(ir::Annotation {
@@ -470,7 +473,7 @@ fn convert_resources_from(
     for (name, font) in &res.fonts {
         let font_ir = font
             .load(resolver)
-            .map(|f| convert_font(&f))
+            .map(|f| convert_font(&f, resolver))
             .unwrap_or_else(|_| default_font_ref());
         out.fonts.push((name_str(name), font_ir));
     }
@@ -554,10 +557,11 @@ fn default_font_ref() -> ir::FontRef {
         descriptor: None,
         to_unicode: None,
         encoding: None,
+        embedded_font: None,
     }
 }
 
-fn convert_font(font: &pdf::font::Font) -> ir::FontRef {
+fn convert_font(font: &pdf::font::Font, resolver: &impl pdf::object::Resolve) -> ir::FontRef {
     let subtype = match font.subtype {
         FontType::Type0 => "Type0",
         FontType::Type1 => "Type1",
@@ -595,6 +599,14 @@ fn convert_font(font: &pdf::font::Font) -> ir::FontRef {
         ir::PdfValue::Reference(inner.id as u32, inner.gen as u16)
     });
 
+    // `embedded_data` covers Type1/TrueType/CIDFontType0/CIDFontType2/Type0
+    // uniformly, resolving whichever of FontFile/FontFile2/FontFile3 is
+    // present on the font's descriptor.
+    let embedded_font = font
+        .embedded_data(resolver)
+        .and_then(|r| r.ok())
+        .map(|bytes| bytes.to_vec());
+
     ir::FontRef {
         subtype,
         base_font,
@@ -604,6 +616,7 @@ fn convert_font(font: &pdf::font::Font) -> ir::FontRef {
         descriptor: None,
         to_unicode,
         encoding: None,
+        embedded_font,
     }
 }
 
@@ -940,13 +953,12 @@ mod tests {
         // The sample has 5 objects (catalog, pages, page, contents, font).
         assert_eq!(doc.objects.len(), 5);
         assert!(doc.objects.iter().any(|&(num, gen, ref v)| {
-            num == 4
-                && gen == 0
-                && matches!(v, ir::PdfValue::Stream(ref s) if !s.data.is_empty())
+            num == 4 && gen == 0 && matches!(v, ir::PdfValue::Stream(ref s) if !s.data.is_empty())
         }));
-        assert!(doc.objects.iter().any(|&(num, _, ref v)| {
-            num == 1 && matches!(v, ir::PdfValue::Dict(_))
-        }));
+        assert!(doc
+            .objects
+            .iter()
+            .any(|&(num, _, ref v)| { num == 1 && matches!(v, ir::PdfValue::Dict(_)) }));
     }
 
     #[test]
@@ -972,7 +984,11 @@ mod tests {
             "<< /Type /Catalog /Pages 2 0 R >>".into(),
             "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>".into(),
-            format!("<< /Length {} >>\nstream\n{}endstream", stream.len(), stream),
+            format!(
+                "<< /Length {} >>\nstream\n{}endstream",
+                stream.len(),
+                stream
+            ),
             "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
             "<< /Title (Report) /Author (TPT) >>".into(),
         ];
@@ -986,7 +1002,7 @@ mod tests {
     fn annotations_and_labels_populated() {
         let stream = "0.2 0.4 0.8 rg\n";
         let objects: Vec<String> = vec![
-            "<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [ 0 << /S /r >> 3 << /S /D /P (p) >> ] >> >>"
+            "<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [ 0 << /S /r >> 1 << /S /D /P (p) >> ] >> >>"
                 .into(),
             "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>".into(),
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 5 0 R /Annots [7 0 R] >>"
